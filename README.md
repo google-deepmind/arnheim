@@ -11,7 +11,7 @@ gradients.
 ## Arnheim 2
 
 A reimplementation of the Arnheim 1 generative architecture in the CLIPDraw
-framework allowing optimzation of its parameters using gradients. Much more
+framework allowing optimization of its parameters using gradients. Much more
 efficient than Arnheim 1 above but requires differentiating through the image
 itself.
 
