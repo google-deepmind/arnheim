@@ -37,6 +37,8 @@ Arnheim 2 [![Open In Colab](https://colab.research.google.com/assets/colab-badge
 
 Arnheim 3 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/deepmind/arnheim/blob/master/arnheim_3.ipynb)
 
+Arnheim 3 Patch Maker [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/deepmind/arnheim/blob/master/arnheim_3_patch_maker.ipynb)
+
 ## Citing this work
 
 If you use this code (or any derived code), data or these models in your work,
