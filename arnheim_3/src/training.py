@@ -315,7 +315,7 @@ def step_optimization(t, clip_enc, lr_scheduler, generator, augment_trans,
   return losses_np, losses_separate_np, img_np
 
 
-def population_evolution_step(generator, losses):
+def population_evolution_step(generator, config, losses):
   """GA for the population."""
 
   if config["ga_method"] == "Microbial":

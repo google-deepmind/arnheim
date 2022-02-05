@@ -191,7 +191,8 @@ class CollageMaker():
 
       if (self._use_evolution and self._step
           and self._step % self._evolution_frequency == 0):
-        training.population_evolution_step(self._generator, losses)
+        training.population_evolution_step(
+            self._generator, self._config, losses)
       self._step += 1
 
 
