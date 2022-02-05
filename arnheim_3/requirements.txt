@@ -1,0 +1,8 @@
+configargparse
+kornia
+ftfy
+regex
+opencv-python
+visdom
+torch
+torch-tools

@@ -1,0 +1,140 @@
+---
+### Collage configuration
+# Canvas
+canvas_width: 224
+canvas_height: 224
+
+# Render methods
+# opacity patches overlay each other using a combination of alpha and depth,
+# transparency _adds_ patch colours (black therefore appearing transparent),
+# and masked transparency blends patches using the alpha channel.
+render_method: "masked_transparency"
+num_patches: 100
+# Colour transformations can be: "none", "RGB space", "HSV space"
+colour_transformations: "RGB space"
+# Invert image colours to have a white background?
+invert_colours: False
+high_res_multiplier: 4
+
+### Affine transform settings
+# Translation bounds for X and Y.
+min_trans: -1.
+max_trans: 1.
+# Scale bounds (> 1 means zoom out and < 1 means zoom in).
+min_scale: 1
+max_scale: 2
+# Bounds on ratio between X and Y scale (default 1).
+min_squeeze: 0.5
+max_squeeze: 2.0
+# Shear deformation bounds (default 0)
+min_shear: -0.2
+max_shear: 0.2
+# Rotation bounds.
+min_rot_deg: -180
+max_rot_deg: 180
+
+### Colour transform settings
+# RGB
+min_rgb: -0.2
+max_rgb: 1.0
+initial_min_rgb: 0.5
+initial_max_rgb: 1.
+# HSV
+min_hue_deg: 0.
+max_hue_deg: 360
+min_sat: 0.
+max_sat: 1.
+min_val: 0.
+max_val: 1.
+
+### Training settings
+clip_model: "ViT-B/32"
+# Number of training steps
+optim_steps: 10000
+learning_rate: 0.1
+# Number of augmentations to use in evaluation
+use_image_augmentations: True
+num_augs: 4
+# Normalize colours for CLIP, generally leave this as True
+use_normalized_clip: False 
+# Gradient clipping during optimisation
+gradient_clipping: 10.0
+# Initial random search size (1 means no search)
+initial_search_size: 1
+
+### Evolution settings
+# For evolution set POP_SIZE greater than 1
+pop_size: 2
+evolution_frequency:  100
+# Microbial - loser of randomly selected pair is replaced by mutated winner. A low selection pressure.
+# Evolutionary Strategies - mutantions of the best individual replace the rest of the population. Much higher selection pressure than Microbial GA.
+ga_method: "Microbial"
+# ### Mutation levels
+# Scale mutation applied to position and rotation, scale, distortion, colour and patch swaps.
+pos_and_rot_mutation_scale: 0.02
+scale_mutation_scale: 0.02
+distort_mutation_scale: 0.02
+colour_mutation_scale: 0.02
+patch_mutation_probability: 1
+# Limit the number of individuals shown during training
+max_multiple_visualizations: 5
+
+### Load segmented patches
+patch_set: "animals.npy"
+patch_repo_root: "https://github.com/deepmind/arnheim/raw/main"
+url_to_patch_file: ""
+
+### Resize image patches to low- and high-res.
+fixed_scale_patches: True
+fixed_scale_coeff: 0.7
+normalize_patch_brightness: False
+patch_max_proportion:  5
+patch_width_min: 16
+patch_height_min: 16
+
+# Configure a background, e.g. uploaded picture or solid colour.
+background_url: ""
+# Background usage: Global: use image across whole image; Local: reuse same image for every tile
+background_use: "Global"
+# Colour configuration for solid colour background
+background_red: 0
+background_green: 0
+background_blue: 0
+
+# @title Configure image prompt and content
+# Enter a global description of the image, e.g. 'a photorealistic chicken'
+global_prompt: "Roman mosaic of an unswept floor"
+
+# @title Tile prompts and tiling settings
+tile_images: False
+tiles_wide: 1
+tiles_high: 1
+
+# Prompt(s) for tiles
+# Global tile prompt uses GLOBAL_PROMPT (previous cell) for *all* tiles (e.g. "Roman mosaic of an unswept floor")
+global_tile_prompt: False
+
+# Otherwise, specify multiple tile prompts with columns separated by | and / to delineate new row.
+# E.g. multiple prompts for a 3x2 "landscape" image: "sun | clouds | sky / fields | fields | trees"
+tile_prompt_string: ""
+
+# Composition prompts
+# @title Composition prompts (within tiles)
+# Use additional prompts for different regions
+compositional_image: False
+
+# Single image (i.e. no tiling) composition prompts
+# Specify 3x3 prompts for each composition region (left to right, starting at the top)
+prompt_x0_y0: "a photorealistic sky with sun"
+prompt_x1_y0: "a photorealistic sky"
+prompt_x2_y0: "a photorealistic sky with moon"
+prompt_x0_y1: "a photorealistic tree"
+prompt_x1_y1: "a photorealistic tree"
+prompt_x2_y1: "a photorealistic tree"
+prompt_x0_y2: "a photorealistic field"
+prompt_x1_y2: "a photorealistic field"
+prompt_x2_y2: "a photorealistic chicken"
+
+# Tile composition prompts
+# This string is formated to autogenerate region prompts from tile prompt. e.g. "close-up of {}"
+tile_prompt_formating: "close-up of {}"
