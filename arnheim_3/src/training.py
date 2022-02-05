@@ -307,7 +307,7 @@ def step_optimization(t, clip_enc, lr_scheduler, generator, augment_trans,
 
   if t % config["trace_every"] == 0:
     output_dir = config["output_dir"]
-    filename = f"{output_dir}/optim_{t}.png"
+    filename = f"{output_dir}/optim_{t}"
     video_utils.show_and_save(img_np, config,
                               max_display=config["max_multiple_visualizations"],
                               stitch=True, img_format="SHWC",
