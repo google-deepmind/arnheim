@@ -322,7 +322,7 @@ def population_evolution_step(generator, config, losses):
 
     # Competition between 2 random individuals; mutated winner replaces loser.
     indices = list(range(len(losses)))
-    random.shuffle(indices)
+    np.random.shuffle(indices)
     select_1, select_2 = indices[0], indices[1]
     if losses[select_1] < losses[select_2]:
       generator.copy_and_mutate_s(select_1, select_2)
