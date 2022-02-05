@@ -26,6 +26,8 @@ import torch
 
 
 def cv2_imshow(img, name="CollageGenerator"):
+  if img.dtype == np.float32 and img.max() > 1.:
+    img = img.astype(np.uint8)
   cv2.imshow(name, img)
   cv2.waitKey(1)
 
