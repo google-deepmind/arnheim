@@ -306,10 +306,13 @@ def step_optimization(t, clip_enc, lr_scheduler, generator, augment_trans,
     torch.save(generator.state_dict(), f"{output_dir}/generator.pt")
 
   if t % config["trace_every"] == 0:
+    output_dir = config["output_dir"]
+    filename = f"{output_dir}/optim_{t}.png"
     video_utils.show_and_save(img_np, config,
                               max_display=config["max_multiple_visualizations"],
                               stitch=True, img_format="SHWC",
-                              show=config["gui"])
+                              show=config["gui"],
+                              filename=filename)
 
     print("Iteration {:3d}, rendering loss {:.6f}".format(t, loss.item()))
   return losses_np, losses_separate_np, img_np
