@@ -106,6 +106,12 @@ def show_and_save(img_batch, config, t=None,
     if img_format == "SCHW":  # Convert to SHWC
       img_np = img_np.transpose((0, 2, 3, 1))
     laid_out = layout_img_batch(img_np, max_display)
+    if filename is not None:
+      if t is not None:
+        filename += "_t_" + str(t)
+      filename += ".png"
+      print(f"Saving temporary image {filename} (shape={laid_out.shape})")
+      cv2.imwrite(filename, cv2.cvtColor(laid_out, cv2.COLOR_BGR2RGB) * 255)
     if show:
       cv2_imshow(cv2.cvtColor(laid_out, cv2.COLOR_BGR2RGB) * 255)
     return laid_out
