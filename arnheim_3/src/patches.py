@@ -29,6 +29,9 @@ import cv2
 import numpy as np
 
 
+import video_utils
+
+
 SHOW_PATCHES = True
 
 
@@ -68,7 +71,7 @@ def print_size_segmented_data(segmented_data, show=True):
       im_bgr = im_i[:, :, :3]
       im_mask = np.tile(im_i[:, :, 3:], (1, 1, 3))
       im_render = np.concatenate([im_bgr, im_mask], 1)
-      cv2_imshow(im_render)
+      video_utils.cv2_imshow(im_render)
   print(f"{len(segmented_data)} patches, max {shape_max}, min {shape_min}\n")
 
 
