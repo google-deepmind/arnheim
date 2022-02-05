@@ -232,8 +232,7 @@ class CollageMaker():
       image_filename = f"{self._output_dir}/{self._file_basename}.png"
       cv2.imwrite(image_filename, img)
     if show:
-      cv2_imshow(img)
-      cv2.waitKey()
+      video_utils.cv2_imshow(img)
     return img
 
   def finish(self):

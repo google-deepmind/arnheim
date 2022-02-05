@@ -25,6 +25,11 @@ import numpy as np
 import torch
 
 
+def cv2_imshow(img, name="CollageGenerator"):
+  cv2.imshow(name, img)
+  cv2.waitKey(1)
+
+
 def load_image(filename, as_cv2_image=False, show=False):
   """Load an image as [0,1] RGB numpy array or cv2 image format."""
   img = cv2.imread(filename)
@@ -72,7 +77,7 @@ def show_and_save(img_batch, config, t=None,
     img_np = np.expand_dims(img_np, axis=0)
 
   if not stitch:
-    # print(f"image (not stitch) min {img_np.min()}, max {img_np.max()}")
+    print(f"image (not stitch) min {img_np.min()}, max {img_np.max()}")
     for i in range(min(max_display, img_np.shape[0])):
       img = img_np[i]
       if img_format == "SCHW":  # Convert to SHWC
@@ -93,7 +98,7 @@ def show_and_save(img_batch, config, t=None,
         cv2_imshow(img)
     return None
   else:
-    # print(f"image (stitch) min {img_np.min()}, max {img_np.max()}")
+    print(f"image (stitch) min {img_np.min()}, max {img_np.max()}")
     img_np = np.clip(img_np, 0.0, 1.0)
     num_images = img_np.shape[0]
     if img_format == "SCHW":  # Convert to SHWC
