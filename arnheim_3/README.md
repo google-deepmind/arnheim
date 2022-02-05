@@ -14,7 +14,7 @@ license.
 
 Clone this GitHub repository and go the `arnheim_3` directory:
 ```sh
-git clone https://github.com/deepmind/arnheim.git
+git clone https://github.com/piotrmirowski/arnheim.git
 cd arnheim/arnheim_3
 ```
 
