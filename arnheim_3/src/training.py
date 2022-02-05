@@ -77,15 +77,14 @@ def moving_average(a, n=3) :
 
 def plot_and_save_losses(loss_history, title="Losses", filename=None):
   losses = np.array(loss_history)
-  plt.figure(figsize=(10,10))
-  plt.xlabel("Training steps")
-  plt.ylabel("Loss")
-  plt.title(title)
-  plt.plot(moving_average(losses, n=3))
   if filename:
+    plt.figure(figsize=(10,10))
+    plt.xlabel("Training steps")
+    plt.ylabel("Loss")
+    plt.title(title)
+    plt.plot(moving_average(losses, n=3))
     np.save(filename + ".npy", losses, allow_pickle=True)
     plt.savefig(filename + ".png")
-  plt.show()
 
 
 def make_optimizer(generator, learning_rate):

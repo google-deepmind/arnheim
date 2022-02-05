@@ -22,6 +22,7 @@
 
 import copy
 import pathlib
+import yaml
 
 import cv2
 import numpy as np
@@ -211,7 +212,8 @@ class CollageMaker():
         segmented_data=segmented_data_high_res,
         background_image=background_image_high_res)
     idx_best = np.argmin(self._losses_history[-1])
-    print(f'Lowest loss for indices: {idx_best}')
+    lowest_loss = self._losses_history[-1][idx_best]
+    print(f'Lowest loss: {lowest_loss} @ index {idx_best}: ')
     generator.copy_from(self._generator, 0, idx_best)
     # Show high res version given a generator
     generator_cpu = copy.deepcopy(generator)
@@ -248,7 +250,10 @@ class CollageMaker():
       self._population_video_writer.close()
     metadata_filename = f"{self._output_dir}/{self._file_basename}.yaml"
     with open(metadata_filename, "w") as f:
-      yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
+      yaml.dump(self._config, f, default_flow_style=False, allow_unicode=True)
+    last_step = self._step
+    last_loss = float(np.amin(self._losses_history[-1]))
+    return (last_step, last_loss)
 
   def _add_video_frames(self, img_batch, losses):
     """Add images from numpy image batch to video writers.
@@ -342,6 +347,7 @@ class CollageTiler():
       print(f"Tile {i} prompts: {tile_prompts}")
 
   def loop(self):
+    res_training = {}
     while self._y < self._tiles_high:
       while self._x < self._tiles_wide:
         if not self._collage_maker:
@@ -368,13 +374,17 @@ class CollageTiler():
             show=self._config["gui"],
             save=True)
         self._save_tile(collage_img / 255)
-        # TODO: Currently calling finish will save video and download zip which is not needed.
-        # self._collage_maker.finish()
+        (last_step, last_loss) = self._collage_maker.finish()
+        res_training[f"tile_{self._y}_{self._x}_loss"] = last_loss
+        res_training[f"tile_{self._y}_{self._x}_step"] = last_step
         del self._collage_maker
         self._collage_maker = None
         self._x += 1
       self._y += 1
       self._x = 0
+    res_filename = f"{self._output_dir}/results_training.yaml"
+    with open(res_filename, "w") as f:
+      yaml.dump(res_training, f, default_flow_style=False, allow_unicode=True)
     return collage_img  # SHWC
 
   def _save_tile(self, img):
