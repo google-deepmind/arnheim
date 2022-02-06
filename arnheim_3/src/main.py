@@ -98,6 +98,13 @@ ap.add_argument("--no_invert_colours", dest="invert_colours",
 ap.set_defaults(invert_colours=False)
 ap.add_argument("--high_res_multiplier", type=int, default=4,
                 help="Ratio between large canvas and CLIP-optimized canvas")
+ap.add_argument('--save_all_arrays', dest='save_all_arrays',
+                action='store_true',
+                help='Save the optimised patch arrays as an npy file?')
+ap.add_argument('--no_save_all_arrays', dest='save_all_arrays',
+                action='store_false',
+                help='Save the optimised patch arrays as an npy file?')
+ap.set_defaults(save_all_arrays=False)
 
 # Affine transform settings.
 ap.add_argument("--min_trans", type=float, default=-1.,

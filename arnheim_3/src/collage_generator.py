@@ -67,14 +67,15 @@ class PopulationCollage(torch.nn.Module):
     if config["torch_device"] == "cuda":
       self.spatial_transformer = self.spatial_transformer.cuda()
       self.colour_transformer = self.colour_transformer.cuda()
+    self.coloured_patches = None
 
     # Optimisation is run in low-res, final rendering is in high-res.
     self._high_res = is_high_res
 
     # Store the background image (low- and high-res).
-    self._background_image = background_image
-    if self._background_image is not None:
-      print(f'Background image of size {self._background_image.shape}')
+    self.background_image = background_image
+    if self.background_image is not None:
+      print(f'Background image of size {self.background_image.shape}')
 
     # Store the dataset (low- and high-res).
     self._dataset = segmented_data
@@ -164,20 +165,20 @@ class PopulationCollage(torch.nn.Module):
     """Input-less forward function."""
 
     shifted_patches = self.spatial_transformer(self.patches)
-    background_image = self._background_image
-    coloured_patches = self.colour_transformer(shifted_patches)
+    background_image = self.background_image
+    self.coloured_patches = self.colour_transformer(shifted_patches)
     if self.config['render_method'] == "transparency":
-      img = rendering.population_render_transparency(coloured_patches,
+      img = rendering.population_render_transparency(self.coloured_patches,
           invert_colours=self.config['invert_colours'], b=background_image)
     elif self.config['render_method'] == "masked_transparency":
-      img = rendering.population_render_masked_transparency(coloured_patches,
+      img = rendering.population_render_masked_transparency(self.coloured_patches,
           invert_colours=self.config['invert_colours'], b=background_image)
     elif self.config['render_method'] == "opacity":
       if params is not None and 'gamma' in params:
         gamma = params['gamma']
       else:
         gamma = None
-      img = rendering.population_render_overlap(coloured_patches,
+      img = rendering.population_render_overlap(self.coloured_patches,
           invert_colours=self.config['invert_colours'], b=background_image)
     else:
       print("Unhandled render method")

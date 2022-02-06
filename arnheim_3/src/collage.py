@@ -235,7 +235,14 @@ class CollageMaker():
       cv2.imwrite(image_filename, img)
     if show:
       video_utils.cv2_imshow(img)
-    return img
+
+    all_patches = generator_cpu.coloured_patches.detach().cpu().numpy()
+    background_image = generator_cpu.background_image.detach().cpu().numpy()
+    all_arrays = {}
+    all_arrays["all_patches"] = all_patches
+    all_arrays["background_image"] = background_image
+
+    return img, all_arrays
 
   def finish(self):
     """Finish video writing and save all other data."""
@@ -367,13 +374,16 @@ class CollageTiler():
               device=self._device,
               config=self._config)
         self._collage_maker.loop()
-        collage_img = self._collage_maker.high_res_render(
+        collage_img, all_arrays = self._collage_maker.high_res_render(
             self._segmented_data_high_res,
             self._tile_high_res_bg,
             gamma=1.0,
             show=self._config["gui"],
             save=True)
         self._save_tile(collage_img / 255)
+        if self._config["save_all_arrays"]:
+          self._save_tile_arrays(all_arrays)
+
         (last_step, last_loss) = self._collage_maker.finish()
         res_training[f"tile_{self._y}_{self._x}_loss"] = last_loss
         res_training[f"tile_{self._y}_{self._x}_step"] = last_step
@@ -382,17 +392,23 @@ class CollageTiler():
         self._x += 1
       self._y += 1
       self._x = 0
+
+    # Save results of all optimisations.
     res_filename = f"{self._output_dir}/results_training.yaml"
     with open(res_filename, "w") as f:
       yaml.dump(res_training, f, default_flow_style=False, allow_unicode=True)
+
     return collage_img  # SHWC
 
   def _save_tile(self, img):
-    print(type(img))
     background_image_np = np.asarray(img)
     background_image_np = background_image_np[..., ::-1].copy()
     filename = self._tile_basename.format(self._y, self._x, ".npy")
     np.save(f"{self._output_dir}/{filename}", background_image_np)
+
+  def _save_tile_arrays(self, all_arrays):
+    filename = self._tile_basename.format(self._y, self._x, "_arrays.npy")
+    np.save(f"{self._output_dir}/{filename}", all_arrays)
 
   def _scale_fixed_background(self, high_res=True):
     if self._fixed_background_image is None:
