@@ -28,6 +28,8 @@ Install [CLIP](https://github.com/openai/CLIP) from OpenAI's GitHub repository:
 python3 -m pip install git+https://github.com/openai/CLIP.git --no-deps
 ```
 
+When using GCP, it might help to enable remote desktop in both your local Chrome browser and on the GCP virtual machine, which can be done following [these instructions](https://cloud.google.com/architecture/chrome-desktop-remote-on-compute-engine#cinnamon).
+
 ## Usage
 
 Configuration files are stored in YAML format in subdirectory `configs`. For instance script `configs/config_compositional_tiled.yaml` generates a composttional collage with global prompt `a photorealistic chicken` and 9 local prompts for `sky`, `sun`, `moon`, `tree`, `field` and `chicken`.
@@ -48,7 +50,6 @@ python3 src/main.py --no-cuda --config configs/config_compositional.yaml
 ```
 
 By default, results are stored in a directory named `output_YYYYMMDD_hhmmss` (based on the timestamp) and contain the config `.yaml` file, and the resulting collage (and tiles) as `.png` and `.npy` files.
-
 
 ## Citing this work
 
