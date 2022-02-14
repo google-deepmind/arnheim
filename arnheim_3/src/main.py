@@ -270,7 +270,7 @@ ap.add_argument("--no_global_tile_prompt", dest="global_tile_prompt",
                 action='store_false',
                 help="Global tile prompt uses global_prompt (previous cell) "
                 "for *all* tiles (e.g. Roman mosaic of an unswept floor)")
-ap.set_defaults(store_false=False)
+ap.set_defaults(global_tile_prompt=False)
 ap.add_argument("--tile_prompt_string", type=str, default="",
                 help="Otherwise, specify multiple tile prompts with columns "
                 "separated by | and / to delineate new row. E.g. multiple "
