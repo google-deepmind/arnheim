@@ -78,8 +78,9 @@ def population_render_masked_transparency(x, invert_colours=False, b=None):
   # Add backgrounds [S, 3, H, W].
   if b is not None:
     b = b.cuda() if x.is_cuda else b.cpu()
-    y = torch.where(mask.sum(1) > RENDER_OVERLAP_MASK_THRESHOLD, y[:, :3, :, :],
-                  b.unsqueeze(0)[:, :3, :, :])
+    clipped_mask = mask_sum.clamp(0., 1.)
+    y = (y[:, :3, :, :] * clipped_mask
+        + b.unsqueeze(0)[:, :3, :, :] * (1 - clipped_mask))
   return y.clamp(0., 1.).permute(0, 2, 3, 1)
 
 
