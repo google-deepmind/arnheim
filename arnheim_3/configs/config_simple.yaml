@@ -3,7 +3,7 @@
 # opacity patches overlay each other using a combination of alpha and depth,
 # transparency _adds_ patch colours (black therefore appearing transparent),
 # and masked transparency blends patches using the alpha channel.
-render_method: "masked_transparency"
+render_method: "masked_transparency_clipped"
 num_patches: 100
 # Colour transformations can be: "none", "RGB space", "HSV space"
 colour_transformations: "RGB space"
@@ -22,7 +22,7 @@ fixed_scale_coeff: 0.5
 # Configure a background, e.g. uploaded picture or solid colour.
 background_url: ""
 # Background usage: Global: use image across whole image; Local: reuse same image for every tile
-background_use: "Global" 
+background_use: "Global"
 # Colour configuration for solid colour background
 background_red: 0
 background_green: 0

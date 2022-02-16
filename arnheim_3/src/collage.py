@@ -327,8 +327,8 @@ class CollageTiler():
     self._overlap = 1. / 3.
 
     # Size of bigger image
-    self._width = self._tile_width * self._tiles_wide
-    self._height = self._tile_height * self._tiles_high
+    self._width = int(((2 * self._tiles_wide + 1) * self._tile_width) / 3.)
+    self._height = int(((2 * self._tiles_high + 1) * self._tile_height) / 3.)
 
     self._high_res_tile_width = self._tile_width * self._high_res_multiplier
     self._high_res_tile_height = self._tile_height * self._high_res_multiplier

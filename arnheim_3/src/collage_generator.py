@@ -170,8 +170,13 @@ class PopulationCollage(torch.nn.Module):
     if self.config['render_method'] == "transparency":
       img = rendering.population_render_transparency(self.coloured_patches,
           invert_colours=self.config['invert_colours'], b=background_image)
-    elif self.config['render_method'] == "masked_transparency":
-      img = rendering.population_render_masked_transparency(self.coloured_patches,
+    elif self.config['render_method'] == "masked_transparency_clipped":
+      img = rendering.population_render_masked_transparency(
+          self.coloured_patches, mode="clipped",
+          invert_colours=self.config['invert_colours'], b=background_image)
+    elif self.config['render_method'] == "masked_transparency_normed":
+      img = rendering.population_render_masked_transparency(
+          self.coloured_patches, mode="normed",
           invert_colours=self.config['invert_colours'], b=background_image)
     elif self.config['render_method'] == "opacity":
       if params is not None and 'gamma' in params:

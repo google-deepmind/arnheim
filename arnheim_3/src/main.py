@@ -70,7 +70,7 @@ ap.add_argument("--trace_every", type=int, default=50,
                 help="Number of steps between two logging traces")
 ap.add_argument('--population_video', dest='population_video',
                 action='store_true', help='Write the video of population?')
-ap.add_argument('--no_population_video', dest='population_video',
+ap.add_argument('--no-population_video', dest='population_video',
                 action='store_false', help='Write the video of population?')
 ap.set_defaults(population_video=False)
 
@@ -83,16 +83,17 @@ ap.add_argument("--canvas_height", type=int, default=224,
 # Render methods.
 ap.add_argument("--render_method", type=str, default="transparency",
                 help="opacity patches overlay each other using combinations of "
-                "alpha and depth, transparency _adds_ patch colours (black "
-                "therefore appearing transparent), masked_transparency "
-                "blends patches using the alpha channel")
+                "alpha and depth, transparency _adds_ patch RGB values (black "
+                "therefore appearing transparent), masked_transparency_clipped "
+                "and masked_transparency_normed blend patches using the alpha "
+                "channel")
 ap.add_argument("--num_patches", type=int, default=100,
                 help="Number of patches")
 ap.add_argument("--colour_transformations", type=str, default="RGB space",
                 help="Can be none, RGB space or HHSV space")
 ap.add_argument("--invert_colours", dest="invert_colours", action='store_true',
                 help="Invert image colours to have a white background?")
-ap.add_argument("--no_invert_colours", dest="invert_colours",
+ap.add_argument("--no-invert_colours", dest="invert_colours",
                 action='store_false',
                 help="Invert image colours to have a white background?")
 ap.set_defaults(invert_colours=False)
@@ -101,7 +102,7 @@ ap.add_argument("--high_res_multiplier", type=int, default=4,
 ap.add_argument('--save_all_arrays', dest='save_all_arrays',
                 action='store_true',
                 help='Save the optimised patch arrays as an npy file?')
-ap.add_argument('--no_save_all_arrays', dest='save_all_arrays',
+ap.add_argument('--no-save_all_arrays', dest='save_all_arrays',
                 action='store_false',
                 help='Save the optimised patch arrays as an npy file?')
 ap.set_defaults(save_all_arrays=False)
@@ -157,7 +158,7 @@ ap.add_argument("--learning_rate", type=float, default=0.1,
 ap.add_argument("--use_image_augmentations", dest="use_image_augmentations",
                 action='store_true',
                 help="User image augmentations for CLIP evaluation?")
-ap.add_argument("--no_use_image_augmentations", dest="use_image_augmentations",
+ap.add_argument("--no-use_image_augmentations", dest="use_image_augmentations",
                 action='store_false',
                 help="User image augmentations for CLIP evaluation?")
 ap.set_defaults(use_image_augmentations=True)
@@ -166,7 +167,7 @@ ap.add_argument("--num_augs", type=int, default=4,
 ap.add_argument("--use_normalized_clip", dest="use_normalized_clip",
                 action='store_true',
                 help="Normalize colours for CLIP, generally leave this as True")
-ap.add_argument("--no_use_normalized_clip", dest="use_normalized_clip",
+ap.add_argument("--no-use_normalized_clip", dest="use_normalized_clip",
                 action='store_false',
                 help="Normalize colours for CLIP, generally leave this as True")
 ap.set_defaults(use_normalized_clip=False)
@@ -215,7 +216,7 @@ ap.add_argument("--url_to_patch_file", type=str, default="",
 # Resize image patches to low- and high-res.
 ap.add_argument("--fixed_scale_patches", dest="fixed_scale_patches",
                 action='store_true', help="Use fixed scale patches?")
-ap.add_argument("--no_fixed_scale_patches", dest="fixed_scale_patches",
+ap.add_argument("--no-fixed_scale_patches", dest="fixed_scale_patches",
                 action='store_false', help="Use fixed scale patches?")
 ap.set_defaults(fixed_scale_patches=True)
 ap.add_argument("--fixed_scale_coeff", type=float, default=0.7,
@@ -223,7 +224,7 @@ ap.add_argument("--fixed_scale_coeff", type=float, default=0.7,
 ap.add_argument("--normalize_patch_brightness",
                 dest="normalize_patch_brightness", action='store_true',
                 help="Normalize the brightness of patches?")
-ap.add_argument("--no_normalize_patch_brightness",
+ap.add_argument("--no-normalize_patch_brightness",
                 dest="normalize_patch_brightness", action='store_false',
                 help="Normalize the brightness of patches?")
 ap.set_defaults(normalize_patch_brightness=False)
@@ -255,7 +256,7 @@ ap.add_argument("--global_prompt", type=str,
 # Tile prompts and tiling settings.
 ap.add_argument("--tile_images", action='store_true', dest="tile_images",
                 help="Tile images?")
-ap.add_argument("--no_tile_images", action='store_false', dest="tile_images",
+ap.add_argument("--no-tile_images", action='store_false', dest="tile_images",
                 help="Tile images?")
 ap.set_defaults(tile_images=False)
 ap.add_argument("--tiles_wide", type=int, default=1,
@@ -266,7 +267,7 @@ ap.add_argument("--global_tile_prompt", dest="global_tile_prompt",
                 action='store_true',
                 help="Global tile prompt uses global_prompt (previous cell) "
                 "for *all* tiles (e.g. Roman mosaic of an unswept floor)")
-ap.add_argument("--no_global_tile_prompt", dest="global_tile_prompt",
+ap.add_argument("--no-global_tile_prompt", dest="global_tile_prompt",
                 action='store_false',
                 help="Global tile prompt uses global_prompt (previous cell) "
                 "for *all* tiles (e.g. Roman mosaic of an unswept floor)")
@@ -281,7 +282,7 @@ ap.add_argument("--tile_prompt_string", type=str, default="",
 ap.add_argument("--compositional_image", dest="compositional_image",
                 action="store_true",
                 help="Use additional prompts for different regions")
-ap.add_argument("--no_compositional_image", dest="compositional_image",
+ap.add_argument("--no-compositional_image", dest="compositional_image",
                 action="store_false",
                 help="Do not use additional prompts for different regions")
 ap.set_defaults(compositional_image=False)
@@ -314,7 +315,6 @@ ap.add_argument("--tile_prompt_formating", type=str, default="close-up of {}",
 
 # Get the config.
 config = vars(ap.parse_args())
-
 # Adjust config for compositional image.
 if config["compositional_image"] == True:
   print("Generating compositional image")
