@@ -8,7 +8,7 @@ canvas_height: 224
 # opacity patches overlay each other using a combination of alpha and depth,
 # transparency _adds_ patch colours (black therefore appearing transparent),
 # and masked transparency blends patches using the alpha channel.
-render_method: "masked_transparency"
+render_method: "masked_transparency_clipped"
 num_patches: 100
 # Colour transformations can be: "none", "RGB space", "HSV space"
 colour_transformations: "RGB space"
@@ -56,7 +56,7 @@ learning_rate: 0.1
 use_image_augmentations: True
 num_augs: 4
 # Normalize colours for CLIP, generally leave this as True
-use_normalized_clip: False 
+use_normalized_clip: False
 # Gradient clipping during optimisation
 gradient_clipping: 10.0
 # Initial random search size (1 means no search)

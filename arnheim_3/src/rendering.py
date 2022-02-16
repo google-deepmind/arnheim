@@ -53,11 +53,14 @@ def population_render_transparency(x, invert_colours=False, b=None):
   return y.clamp(0., 1.).permute(0, 2, 3, 1)
 
 
-def population_render_masked_transparency(x, invert_colours=False, b=None):
+def population_render_masked_transparency(
+    x, mode, invert_colours=False, b=None):
   """Image rendering function that renders all patches on top of one another,
      with transparency, using the alpha chanel as the mask colour.
   Args:
     x: tensor of transformed RGB image patches of shape [S, B, 5, H, W].
+    mode: ["clipped" | "normed"], methods of handling alpha with background.
+    invert_colours: invert RGB values
     b: optional tensor of background RGB image of shape [S, 3, H, W].
   Returns:
     Tensor of rendered RGB images of shape [S, 3, H, W].
@@ -71,16 +74,20 @@ def population_render_masked_transparency(x, invert_colours=False, b=None):
   x_sum = masked_x.sum(1)
   y = torch.where(
       mask_sum > RENDER_EPSILON, x_sum / mask_sum, mask_sum)
-  # Anti-aliasing on the countours of the sum of patches.
-  y = y * mask_sum.clamp(0., 1.)
   if invert_colours:
     y[:, :3, :, :] = 1.0 - y[:, :3, :, :]
   # Add backgrounds [S, 3, H, W].
   if b is not None:
     b = b.cuda() if x.is_cuda else b.cpu()
-    clipped_mask = mask_sum.clamp(0., 1.)
-    y = (y[:, :3, :, :] * clipped_mask
-        + b.unsqueeze(0)[:, :3, :, :] * (1 - clipped_mask))
+    if mode == "normed":
+      mask_max = mask_sum.max(
+          dim=2, keepdim=True).values.max(dim=3, keepdim=True).values
+      mask = mask_sum / mask_max
+    elif mode == "clipped":
+      mask = mask_sum.clamp(0., 1.)
+    else:
+      raise ValueError(f"Unknown masked_transparency mode {mode}")
+    y = y[:, :3, :, :] * mask + b.unsqueeze(0)[:, :3, :, :] * (1 - mask)
   return y.clamp(0., 1.).permute(0, 2, 3, 1)
 
 
