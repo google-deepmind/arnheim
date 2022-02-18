@@ -1,0 +1,45 @@
+---
+# Render methods
+# opacity patches overlay each other using a combination of alpha and depth,
+# transparency _adds_ patch colours (black therefore appearing transparent),
+# and masked transparency blends patches using the alpha channel.
+render_method: "masked_transparency_clipped"
+num_patches: 100
+# Colour transformations can be: "none", "RGB space", "HSV space"
+colour_transformations: "RGB space"
+
+# Number of training steps
+optim_steps: 10
+learning_rate: 0.3
+
+### Load segmented patches
+patch_set: "animals.npy"
+### Resize image patches to low- and high-res.
+no-fixed_scale_patches: true
+patch_max_proportion: 8
+
+# The multiple_* lists enable the above patch parameters to be overwritten on a
+# per-tile basis. Entries in the lists are used in the order tiles are created,
+# i.e. left to right, top to bottom, and the list is repeated if necessary.
+multiple_patch_set: ["shore_glass.npy", "animals.npy"]
+multiple_fixed_scale_patches: [true, true, false]
+multiple_fixed_scale_coeff: [0.8, 0.3]
+# multiple_patch_max_proportion: [3, 5, 5]
+
+global_tile_prompt: True
+tile_images: True
+tiles_wide: 1
+tiles_high: 3
+
+# Configure a background, e.g. uploaded picture or solid colour.
+# background_url: "https://upload.wikimedia.org/wikipedia/commons/0/0e/Lithographic_Drawing-Book_%28BM_1887%2C0722.360.2%29.jpg"
+background_url: "biggest_chicken_ever.jpg"
+# Background usage: Global: use image across whole image; Local: reuse same image for every tile
+background_use: "Global"
+# Colour configuration for solid colour background
+background_red: 0
+background_green: 0
+background_blue: 0
+
+# Enter a global description of the image, e.g. 'a photorealistic chicken'
+global_prompt: "torso"

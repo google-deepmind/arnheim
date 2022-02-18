@@ -28,7 +28,6 @@ RENDER_EPSILON = 1e-8
 RENDER_OVERLAP_TEMPERATURE = 0.1
 RENDER_OVERLAP_ZERO_OFFSET = -5
 RENDER_OVERLAP_MASK_THRESHOLD = 0.5
-RENDER_TRANSPARENCY_MASK_THRESHOLD = 0.1
 
 
 def population_render_transparency(x, invert_colours=False, b=None):
@@ -48,8 +47,7 @@ def population_render_transparency(x, invert_colours=False, b=None):
   # Add backgrounds [S, 3, H, W].
   if b is not None:
     b = b.cuda() if x.is_cuda else b.cpu()
-    y = torch.where(y.sum(1, keepdim=True) > RENDER_TRANSPARENCY_MASK_THRESHOLD,
-                    y[:, :3, :, :], b.unsqueeze(0)[:, :3, :, :])
+    y = (y + b).clamp(0., 1.)
   return y.clamp(0., 1.).permute(0, 2, 3, 1)
 
 

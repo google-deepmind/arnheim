@@ -33,7 +33,6 @@ import torch
 import clip
 
 import collage
-import patches
 import video_utils
 
 
@@ -205,6 +204,14 @@ ap.add_argument("--max_multiple_visualizations", type=int, default=5,
                 help="Limit the number of individuals shown during training")
 
 # Load segmented patches.
+ap.add_argument("--multiple_patch_set", default=None,
+                action='append', dest="multiple_patch_set")
+ap.add_argument("--multiple_fixed_scale_patches", default=None,
+                action='append', dest="multiple_fixed_scale_patches")
+ap.add_argument("--multiple_patch_max_proportion", default=None,
+                action='append', dest="multiple_patch_max_proportion")
+ap.add_argument("--multiple_fixed_scale_coeff", default=None,
+                action='append', dest="multiple_fixed_scale_coeff")
 ap.add_argument("--patch_set", type=str, default="animals.npy",
                 help="Name of Numpy file with patches")
 ap.add_argument("--patch_repo_root", type=str,
@@ -312,9 +319,11 @@ ap.add_argument("--tile_prompt_formating", type=str, default="close-up of {}",
                 help="This string is formated to autogenerate region prompts "
                 "from tile prompt. e.g. close-up of {}")
 
-
 # Get the config.
 config = vars(ap.parse_args())
+
+print(config)
+
 # Adjust config for compositional image.
 if config["compositional_image"] == True:
   print("Generating compositional image")
@@ -376,11 +385,6 @@ config_filename = config["output_dir"] + "config.yaml"
 with open(config_filename, "w") as f:
   yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
 
-
-# Images patches.
-segmented_data, segmented_data_high_res = patches.get_segmented_data(config)
-
-
 # Tiling.
 if not config["tile_images"] or config["global_tile_prompt"]:
   tile_prompts = (
@@ -405,6 +409,7 @@ else:
     raise ValueError(f"Insufficient prompt rows; expected {h}, got {count_y}")
 
 print("Tile prompts: ", tile_prompts)
+# Prepare duplicates of config data if required for tiles.
 tile_count = 0
 all_prompts = []
 for y in range(config["tiles_high"]):
@@ -449,8 +454,6 @@ else:
 # Initialse the collage.
 ct = collage.CollageTiler(
     prompts=all_prompts,
-    segmented_data=segmented_data,
-    segmented_data_high_res=segmented_data_high_res,
     fixed_background_image=background_image,
     clip_model=clip_model,
     device=device,

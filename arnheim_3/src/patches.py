@@ -117,7 +117,30 @@ def normalise_patch_brightness(patch):
   return ((patch / max_intensity) * 255).astype(np.uint8)
 
 
-def get_segmented_data(config):
+def get_segmented_data(config, index):
+  """ Generate low and high res patch data for a collage.
+
+  Args:
+    config: dict, config file and command line args
+    index: int, which subset of options to use when multiple are available.
+        E.g. selecting patch set based on tile number.
+  Returns:
+    numpy arrays: low and high resolution patch data.
+  """
+  # Select tile's patch set and/or parameters if multiple provided.
+  if isinstance(config["multiple_patch_set"], list):
+    config["patch_set"] = config["multiple_patch_set"][
+        index % len(config["multiple_patch_set"])]
+  if isinstance(config["multiple_fixed_scale_patches"], list):
+    config["fixed_scale_patches"] = config["multiple_fixed_scale_patches"][
+        index % len(config["multiple_fixed_scale_patches"])] == "True"
+  if isinstance(config["multiple_patch_max_proportion"], list):
+    config["patch_max_proportion"] = int(config[
+        "multiple_patch_max_proportion"][
+        index % len(config["multiple_patch_max_proportion"])])
+  if isinstance(config["multiple_fixed_scale_coeff"], list):
+    config["fixed_scale_coeff"] = float(config["multiple_fixed_scale_coeff"][
+        index % len(config["multiple_fixed_scale_coeff"])])
 
   segmented_data_initial = get_segmented_data_initial(config)
 
@@ -127,17 +150,22 @@ def get_segmented_data(config):
 
   # Compress all images until they are at most 1/PATCH_MAX_PROPORTION of the
   # large canvas size.
-  canvas_height = config['canvas_height']
-  canvas_width = config['canvas_width']
-  hires_height = canvas_height * config['high_res_multiplier']
-  hires_width = canvas_width * config['high_res_multiplier']
+  canvas_height = config["canvas_height"]
+  canvas_width = config["canvas_width"]
+  hires_height = canvas_height * config["high_res_multiplier"]
+  hires_width = canvas_width * config["high_res_multiplier"]
   height_large_max = hires_height / config["patch_max_proportion"]
   width_large_max = hires_width / config["patch_max_proportion"]
+  print(f"Patch set {config['patch_set']}, fixed_scale_patches? "
+      f"{config['fixed_scale_patches']}, "
+      f"fixed_scale_coeff={config['fixed_scale_coeff']}, "
+      f"patch_max_proportion={config['patch_max_proportion']}")
   if config["fixed_scale_patches"]:
     print(f"Max size for fixed scale patches: ({hires_height},{hires_width})")
   else:
     print(
         f"Max patch size on large img: ({height_large_max}, {width_large_max})")
+  print(type(config['fixed_scale_patches']))
   segmented_data = []
   segmented_data_high_res = []
   for patch_i in range(num_patches):

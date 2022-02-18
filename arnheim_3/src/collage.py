@@ -65,7 +65,6 @@ class CollageMaker():
         initial_search_size: int, initial random search size (1 means no search)
     """
     self._prompts = prompts
-    self._segmented_data = segmented_data
     self._background_image = background_image
     self._clip_model = clip_model
     self._file_basename = file_basename
@@ -282,8 +281,6 @@ class CollageMaker():
 class CollageTiler():
   def __init__(self,
                prompts,
-               segmented_data,
-               segmented_data_high_res,
                fixed_background_image,
                clip_model,
                device,
@@ -291,8 +288,6 @@ class CollageTiler():
     """Creates a large collage by producing multiple interlaced collages.
     Args:
       prompts: list of prompts for the collage maker
-      segmented_data: patch data for collage maker to use during opmtimisation
-      segmented_data_high_res: high res patch data for final renders
       fixed_background_image: highest res background image
       clip_model: CLIP model
       device: CUDA device
@@ -306,8 +301,6 @@ class CollageTiler():
         torch_device: string, either cpu or cuda
     """
     self._prompts = prompts
-    self._segmented_data = segmented_data
-    self._segmented_data_high_res = segmented_data_high_res
     self._fixed_background_image = fixed_background_image
     self._clip_model = clip_model
     self._device = device
@@ -365,9 +358,12 @@ class CollageTiler():
                                     img_format="SCHW", stitch=False,
                                     show=self._config["gui"])
           prompts_x_y = self._prompts[self._y * self._tiles_wide + self._x]
+          segmented_data, self._segmented_data_high_res = (
+              patches.get_segmented_data(self._config, self._x + self._y *
+                self._tiles_wide))
           self._collage_maker = CollageMaker(
               prompts=prompts_x_y,
-              segmented_data=self._segmented_data,
+              segmented_data=segmented_data,
               background_image=tile_bg,
               clip_model=self._clip_model,
               file_basename=self._tile_basename.format(self._y, self._x, ""),
