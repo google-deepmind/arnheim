@@ -21,12 +21,12 @@
 # Collage-making class definitions
 
 import copy
-import pathlib
-import yaml
-
 import cv2
+import math
 import numpy as np
+import pathlib
 import torch
+import yaml
 
 import collage_generator
 import patches
@@ -439,9 +439,11 @@ class CollageTiler():
         #orgin_y = self._y * self._high_res_tile_height - int(
         #    self._high_res_tile_height * 2 * self._overlap)
         orgin_y = self._y * (self._high_res_tile_height
-                             - int(self._high_res_tile_height * self._overlap))
+                             - math.ceil(self._tile_height * self._overlap)
+                             * self._high_res_multiplier)
         orgin_x = self._x * (self._high_res_tile_width
-                             - int(self._high_res_tile_width * self._overlap))
+                             - math.ceil(self._tile_width * self._overlap)
+                             * self._high_res_multiplier)
         #orgin_x = self._x * self._high_res_tile_width - int(
         #    self._high_res_tile_width * 2 * self._overlap)
         tile_border_bg = self._fixed_background[

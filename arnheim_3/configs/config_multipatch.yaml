@@ -1,3 +1,4 @@
+# Example of using different patch sets for different cells.
 ---
 # Render methods
 # opacity patches overlay each other using a combination of alpha and depth,
@@ -9,7 +10,7 @@ num_patches: 100
 colour_transformations: "RGB space"
 
 # Number of training steps
-optim_steps: 10
+optim_steps: 2000
 learning_rate: 0.3
 
 ### Load segmented patches
@@ -28,8 +29,8 @@ multiple_fixed_scale_coeff: [0.8, 0.3]
 
 global_tile_prompt: True
 tile_images: True
-tiles_wide: 1
-tiles_high: 3
+tiles_wide: 2
+tiles_high: 2
 
 # Configure a background, e.g. uploaded picture or solid colour.
 # background_url: "https://upload.wikimedia.org/wikipedia/commons/0/0e/Lithographic_Drawing-Book_%28BM_1887%2C0722.360.2%29.jpg"
