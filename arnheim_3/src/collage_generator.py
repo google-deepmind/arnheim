@@ -26,8 +26,8 @@ import time
 import numpy as np
 import torch
 
-import rendering
-import transformations
+from . import rendering
+from . import transformations
 
 
 class PopulationCollage(torch.nn.Module):

@@ -36,17 +36,17 @@ Configuration files are stored in YAML format in subdirectory `configs`. For ins
 
 Please refer to `configs/config.yaml` and to the help for explanation about the config.
 ```sh
-python3 src/main.py --help
+python3 main.py --help
 ```
 
 To run with CUDA on a GPU accelerator:
 ```sh
-python3 src/main.py --config configs/config_compositional.yaml
+python3 main.py --config configs/config_compositional.yaml
 ```
 
 To run without CUDA (e.g., on Mac OS - note this will be considerably slower):
 ```sh
-python3 src/main.py --no-cuda --config configs/config_compositional.yaml
+python3 main.py --no-cuda --config configs/config_compositional.yaml
 ```
 
 By default, results are stored in a directory named `output_YYYYMMDD_hhmmss` (based on the timestamp) and contain the config `.yaml` file, and the resulting collage (and tiles) as `.png` and `.npy` files.

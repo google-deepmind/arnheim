@@ -32,8 +32,8 @@ import torch
 
 import clip
 
-import collage
-import video_utils
+import src.collage as collage
+import src.video_utils as video_utils
 
 
 # Specify (and override) the config.

@@ -28,10 +28,10 @@ import pathlib
 import torch
 import yaml
 
-import collage_generator
-import patches
-import training
-import video_utils
+from .collage_generator import PopulationCollage
+from .patches import get_segmented_data
+from . import training
+from . import video_utils
 
 
 class CollageMaker():
@@ -110,7 +110,7 @@ class CollageMaker():
         use_augmentation=self._use_image_augmentations)
 
     # Create population of collage generators.
-    self._generator = collage_generator.PopulationCollage(
+    self._generator = PopulationCollage(
         config=config,
         device=self._device,
         is_high_res=False,
@@ -122,7 +122,7 @@ class CollageMaker():
     if self._initial_search_size > 1:
       print(f'\nInitial random search over {self._initial_search_size} individuals')
       for j in range(population_size):
-        generator_search = collage_generator.PopulationCollage(
+        generator_search = PopulationCollage(
             config=config,
             device=self._device,
             pop_size=self._initial_search_size,
@@ -203,7 +203,7 @@ class CollageMaker():
                       show=True,
                       save=True):
     """Save and/or show a high res render using high-res patches."""
-    generator = collage_generator.PopulationCollage(
+    generator = PopulationCollage(
         config=self._config,
         device=self._device,
         is_high_res=True,
@@ -359,7 +359,7 @@ class CollageTiler():
                                     show=self._config["gui"])
           prompts_x_y = self._prompts[self._y * self._tiles_wide + self._x]
           segmented_data, self._segmented_data_high_res = (
-              patches.get_segmented_data(self._config, self._x + self._y *
+              get_segmented_data(self._config, self._x + self._y *
                 self._tiles_wide))
           self._collage_maker = CollageMaker(
               prompts=prompts_x_y,
