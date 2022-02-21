@@ -29,7 +29,7 @@ import cv2
 import numpy as np
 
 
-import video_utils
+from .video_utils import cv2_imshow
 
 
 SHOW_PATCHES = True

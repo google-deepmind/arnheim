@@ -29,7 +29,7 @@ import torchvision.transforms as transforms
 
 import clip
 
-import video_utils
+from .video_utils import show_and_save
 
 
 # Show each image being evaluated for debugging purposes.
@@ -243,7 +243,7 @@ def evaluation(t, clip_enc, generator, augment_trans, text_features,
           print(f"Loss {loss} for image region with prompt {prompts[n]}:")
         else:
           print(f"Loss {loss} for image augmentation with prompt {prompts[0]}:")
-        video_utils.show_and_save(img_batch[count].unsqueeze(0), config,
+        show_and_save(img_batch[count].unsqueeze(0), config,
             img_format="SCHW", show=config["gui"])
       count += 1
   loss = torch.sum(losses) / pop_size
@@ -298,7 +298,7 @@ def step_optimization(t, clip_enc, lr_scheduler, generator, augment_trans,
 
   # Render the big version.
   if final_step:
-    video_utils.show_and_save(
+    show_and_save(
         img_np, config, t=t, img_format="SHWC", show=config["gui"])
     output_dir = config["output_dir"]
     print(f"Saving model to {output_dir}...")
@@ -307,7 +307,7 @@ def step_optimization(t, clip_enc, lr_scheduler, generator, augment_trans,
   if t % config["trace_every"] == 0:
     output_dir = config["output_dir"]
     filename = f"{output_dir}/optim_{t}"
-    video_utils.show_and_save(img_np, config,
+    show_and_save(img_np, config,
                               max_display=config["max_multiple_visualizations"],
                               stitch=True, img_format="SHWC",
                               show=config["gui"],
