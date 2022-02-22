@@ -24,12 +24,14 @@ import cv2
 import numpy as np
 import torch
 
-
-def cv2_imshow(img, name="CollageGenerator"):
-  if img.dtype == np.float32 and img.max() > 1.:
-    img = img.astype(np.uint8)
-  cv2.imshow(name, img)
-  cv2.waitKey(1)
+try:
+  from google.colab.patches import cv2_imshow
+except:
+  def cv2_imshow(img, name="CollageGenerator"):
+    if img.dtype == np.float32 and img.max() > 1.:
+      img = img.astype(np.uint8)
+    cv2.imshow(name, img)
+    cv2.waitKey(1)
 
 
 def load_image(filename, as_cv2_image=False, show=False):

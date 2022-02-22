@@ -71,7 +71,7 @@ def print_size_segmented_data(segmented_data, show=True):
       im_bgr = im_i[:, :, :3]
       im_mask = np.tile(im_i[:, :, 3:], (1, 1, 3))
       im_render = np.concatenate([im_bgr, im_mask], 1)
-      video_utils.cv2_imshow(im_render)
+      cv2_imshow(im_render)
   print(f"{len(segmented_data)} patches, max {shape_max}, min {shape_min}\n")
 
 
@@ -128,17 +128,21 @@ def get_segmented_data(config, index):
     numpy arrays: low and high resolution patch data.
   """
   # Select tile's patch set and/or parameters if multiple provided.
-  if isinstance(config["multiple_patch_set"], list):
+  if "multiple_patch" in config and isinstance(
+      config["multiple_patch_set"], list):
     config["patch_set"] = config["multiple_patch_set"][
         index % len(config["multiple_patch_set"])]
-  if isinstance(config["multiple_fixed_scale_patches"], list):
+  if "multiple_fixed_scale_patches" in config and isinstance(
+      config["multiple_fixed_scale_patches"], list):
     config["fixed_scale_patches"] = config["multiple_fixed_scale_patches"][
         index % len(config["multiple_fixed_scale_patches"])] == "True"
-  if isinstance(config["multiple_patch_max_proportion"], list):
+  if "multiple_patch_max_proportion" in config and isinstance(
+      config["multiple_patch_max_proportion"], list):
     config["patch_max_proportion"] = int(config[
         "multiple_patch_max_proportion"][
         index % len(config["multiple_patch_max_proportion"])])
-  if isinstance(config["multiple_fixed_scale_coeff"], list):
+  if "multiple_fixed_scale_coeff" in config and isinstance(
+      config["multiple_fixed_scale_coeff"], list):
     config["fixed_scale_coeff"] = float(config["multiple_fixed_scale_coeff"][
         index % len(config["multiple_fixed_scale_coeff"])])
 
