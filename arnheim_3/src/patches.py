@@ -226,8 +226,8 @@ def get_segmented_data(config, index):
 
   if SHOW_PATCHES:
     print("Patch sizes during optimisation:")
-    print_size_segmented_data(segmented_data, show=config["gui"])
+    print_size_segmented_data(segmented_data, show=False)
     print("Patch sizes for high-resolution final image:")
-    print_size_segmented_data(segmented_data_high_res, show=config["gui"])
+    print_size_segmented_data(segmented_data_high_res, show=False)
 
   return segmented_data, segmented_data_high_res
