@@ -97,7 +97,7 @@ def get_segmented_data_initial(config):
     repo_file = config["patch_set"]
     repo_root = config["patch_repo_root"]
     segmented_data_initial = cached_url_download(
-        f"{repo_root}/collage_patches/{repo_file}")
+        f"{repo_root}/{repo_file}")
 
   segmented_data_initial_tmp = []
   for i in range(len(segmented_data_initial)):
@@ -128,7 +128,7 @@ def get_segmented_data(config, index):
     numpy arrays: low and high resolution patch data.
   """
   # Select tile's patch set and/or parameters if multiple provided.
-  if "multiple_patch" in config and isinstance(
+  if "multiple_patch_set" in config and isinstance(
       config["multiple_patch_set"], list):
     config["patch_set"] = config["multiple_patch_set"][
         index % len(config["multiple_patch_set"])]
