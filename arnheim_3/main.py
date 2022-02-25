@@ -78,6 +78,8 @@ ap.add_argument("--canvas_width", type=int, default=224,
                 help="Image width for CLIP optimization")
 ap.add_argument("--canvas_height", type=int, default=224,
                 help="Image height for CLIP optimization")
+ap.add_argument("--max_block_size_high_res", type=int, default=2000,
+                help="Max block size for high-res image")
 
 # Render methods.
 ap.add_argument("--render_method", type=str, default="transparency",
@@ -215,8 +217,7 @@ ap.add_argument("--multiple_fixed_scale_coeff", default=None,
 ap.add_argument("--patch_set", type=str, default="animals.npy",
                 help="Name of Numpy file with patches")
 ap.add_argument("--patch_repo_root", type=str,
-                default=
-                "https://github.com/deepmind/arnheim/raw/main/collage_patches",
+                default="https://github.com/deepmind/arnheim/raw/main",
                 help="URL to patches")
 ap.add_argument("--url_to_patch_file", type=str, default="",
                 help="URL to a patch file")
@@ -443,10 +444,9 @@ if len(config["background_url"]) > 0:
                                             show=config["gui"])
 else:
   background_image = np.ones((10, 10, 3), dtype=np.float32)
-  background_image[:, :, 0] = config["background_red"]
-  background_image[:, :, 1] = config["background_green"]
-  background_image[:, :, 2] = config["background_blue"]
-  # background_image[:, :, 3] = 255.
+  background_image[:, :, 0] = config["background_red"] / 255.
+  background_image[:, :, 1] = config["background_green"] / 255.
+  background_image[:, :, 2] = config["background_blue"] / 255.
   print('Defined background colour ({}, {}, {})'.format(
       config["background_red"], config["background_green"],
       config["background_blue"]))

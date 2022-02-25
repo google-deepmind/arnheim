@@ -30,12 +30,17 @@ import torch.nn.functional as F
 class PopulationAffineTransforms(torch.nn.Module):
   """Population-based Affine Transform network."""
 
-  def __init__(self, config, device, num_patches=1, pop_size=1):
+  def __init__(self, config, device, num_patches=1, pop_size=1,
+               requires_grad=True, is_high_res=False):
     super(PopulationAffineTransforms, self).__init__()
 
     self.config = config
     self.device = device
     self._pop_size = pop_size
+    self._is_high_res = is_high_res
+    print('PopulationAffineTransforms is_high_res={}, requires_grad={}'.format(
+        self._is_high_res, requires_grad))
+
     self._min_rot = self.config['min_rot_deg'] * np.pi / 180.
     self._max_rot = self.config['max_rot_deg'] * np.pi / 180.
     matrices_translation = (
@@ -59,19 +64,19 @@ class PopulationAffineTransforms(torch.nn.Module):
         + self.config['min_shear'])
     self.translation = torch.nn.Parameter(
         torch.tensor(matrices_translation, dtype=torch.float),
-        requires_grad=True)
+        requires_grad=requires_grad)
     self.rotation = torch.nn.Parameter(
         torch.tensor(matrices_rotation, dtype=torch.float),
-        requires_grad=True)
+        requires_grad=requires_grad)
     self.scale = torch.nn.Parameter(
         torch.tensor(matrices_scale, dtype=torch.float),
-        requires_grad=True)
+        requires_grad=requires_grad)
     self.squeeze = torch.nn.Parameter(
         torch.tensor(matrices_squeeze, dtype=torch.float),
-        requires_grad=True)
+        requires_grad=requires_grad)
     self.shear = torch.nn.Parameter(
         torch.tensor(matrices_shear, dtype=torch.float),
-        requires_grad=True)
+        requires_grad=requires_grad)
     self._identity = (
         torch.ones((pop_size, num_patches, 1, 1)) * torch.eye(2).unsqueeze(0)
         ).to(self.device)
@@ -122,7 +127,7 @@ class PopulationAffineTransforms(torch.nn.Module):
       self.squeeze[idx_to, ...] = other.squeeze[idx_from, ...]
       self.shear[idx_to, ...] = other.shear[idx_from, ...]
 
-  def forward(self, x):
+  def forward(self, x, idx_patch=None):
     self._clamp()
     scale_affine_mat = torch.cat([
         torch.cat([self.scale, self.shear], 3),
@@ -144,20 +149,34 @@ class PopulationAffineTransforms(torch.nn.Module):
     # Population and patch dimensions (0 and 1) need to be merged.
     # E.g. from (POP_SIZE, NUM_PATCHES, CHANNELS, WIDTH, HEIGHT)
     # to (POP_SIZE * NUM_PATCHES, CHANNELS, WIDTH, HEIGHT)
-    scale_rotation_mat = scale_rotation_mat[:, :, :2, :].view(
-        1, -1, *(scale_rotation_mat[:, :, :2, :].size()[2:])).squeeze()
-    x = x.view(1, -1, *(x.size()[2:])).squeeze()
+    if idx_patch is not None and self._is_high_res:
+      scale_rotation_mat = scale_rotation_mat[:, idx_patch, :, :]
+      num_patches = 1
+    else:
+      scale_rotation_mat = scale_rotation_mat[:, :, :2, :].view(
+          1, -1, *(scale_rotation_mat[:, :, :2, :].size()[2:])).squeeze()
+      num_patches = x.size()[1]
+      x = x.view(1, -1, *(x.size()[2:])).squeeze()
+    # print('scale_rotation_mat', scale_rotation_mat.size())
+    # print('x', x.size())
     scaled_rotated_grid = F.affine_grid(
         scale_rotation_mat, x.size(), align_corners=True)
     scaled_rotated_x = F.grid_sample(x, scaled_rotated_grid, align_corners=True)
 
     translation_affine_mat = torch.cat([self._identity, self.translation], 3)
-    translation_affine_mat = translation_affine_mat.view(
-        1, -1, *(translation_affine_mat.size()[2:])).squeeze()
+    if idx_patch is not None and self._is_high_res:
+      translation_affine_mat = translation_affine_mat[:, idx_patch, :, :]
+    else:
+      translation_affine_mat = translation_affine_mat.view(
+          1, -1, *(translation_affine_mat.size()[2:])).squeeze()
+    # print('translation_affine_mat', translation_affine_mat.size())
+    # print('scaled_rotated_x', scaled_rotated_x.size())
     translated_grid = F.affine_grid(
-        translation_affine_mat, x.size(), align_corners=True)
+        translation_affine_mat, scaled_rotated_x.size(), align_corners=True)
     y = F.grid_sample(scaled_rotated_x, translated_grid, align_corners=True)
-    return y.view(self._pop_size, self.config["num_patches"], *(y.size()[1:]))
+    # print('y', y.size())
+    # print('num_patches', num_patches)
+    return y.view(self._pop_size, num_patches, *(y.size()[1:]))
 
   def tensor_to(self, device):
     self.translation = self.translation.to(device)
@@ -174,12 +193,14 @@ class PopulationAffineTransforms(torch.nn.Module):
 class PopulationOrderOnlyTransforms(torch.nn.Module):
   """No color transforms, just ordering of patches."""
 
-  def __init__(self, config, device, num_patches=1, pop_size=1):
+  def __init__(self, config, device, num_patches=1, pop_size=1,
+               requires_grad=True):
     super(PopulationOrderOnlyTransforms, self).__init__()
 
     self.config = config
     self.device = device
     self._pop_size = pop_size
+    print(f'PopulationOrderOnlyTransforms requires_grad={requires_grad}')
 
     population_zeros = np.ones((pop_size, num_patches, 1, 1, 1))
     population_orders = np.random.rand(pop_size, num_patches, 1, 1, 1)
@@ -189,7 +210,7 @@ class PopulationOrderOnlyTransforms(torch.nn.Module):
         requires_grad=False)
     self.orders = torch.nn.Parameter(
         torch.tensor(population_orders, dtype=torch.float),
-        requires_grad=True)
+        requires_grad=requires_grad)
     self._hsv_to_rgb = hsv.HsvToRgb()
 
   def _clamp(self):
@@ -220,7 +241,8 @@ class PopulationOrderOnlyTransforms(torch.nn.Module):
 class PopulationColourHSVTransforms(torch.nn.Module):
   """HSV color transforms and ordering of patches."""
 
-  def __init__(self, config, device, num_patches=1, pop_size=1):
+  def __init__(self, config, device, num_patches=1, pop_size=1,
+               requires_grad=True):
     super(PopulationColourHSVTransforms, self).__init__()
 
     self.config = config
@@ -230,6 +252,7 @@ class PopulationColourHSVTransforms(torch.nn.Module):
     self._pop_size = pop_size
     self._min_hue = self.config['min_hue_deg'] * np.pi / 180.
     self._max_hue = self.config['max_hue_deg'] * np.pi / 180.
+    print(f'PopulationColourHSVTransforms requires_grad={requires_grad}')
 
     coeff_hue = (0.5 * (self._max_hue - self._min_hue) + self._min_hue)
     coeff_sat = (0.5 * (self.config['max_sat'] - self.config['min_sat'])
@@ -247,19 +270,19 @@ class PopulationColourHSVTransforms(torch.nn.Module):
 
     self.hues = torch.nn.Parameter(
         torch.tensor(population_hues, dtype=torch.float),
-        requires_grad=True)
+        requires_grad=requires_grad)
     self.saturations = torch.nn.Parameter(
         torch.tensor(population_saturations, dtype=torch.float),
-        requires_grad=True)
+        requires_grad=requires_grad)
     self.values = torch.nn.Parameter(
         torch.tensor(population_values, dtype=torch.float),
-        requires_grad=True)
+        requires_grad=requires_grad)
     self._zeros = torch.nn.Parameter(
         torch.tensor(population_zeros, dtype=torch.float),
         requires_grad=False)
     self.orders = torch.nn.Parameter(
         torch.tensor(population_orders, dtype=torch.float),
-        requires_grad=True)
+        requires_grad=requires_grad)
     self._hsv_to_rgb = hsv.HsvToRgb()
 
   def _clamp(self):
@@ -315,7 +338,8 @@ class PopulationColourHSVTransforms(torch.nn.Module):
 class PopulationColourRGBTransforms(torch.nn.Module):
   """RGB color transforms and ordering of patches."""
 
-  def __init__(self, config, device, num_patches=1, pop_size=1):
+  def __init__(self, config, device, num_patches=1, pop_size=1,
+               requires_grad=True):
     super(PopulationColourRGBTransforms, self).__init__()
 
     self.config = config
@@ -323,6 +347,7 @@ class PopulationColourRGBTransforms(torch.nn.Module):
     print('PopulationColourRGBTransforms for {} patches, {} individuals'.format(
         num_patches, pop_size))
     self._pop_size = pop_size
+    print(f'PopulationColourRGBTransforms requires_grad={requires_grad}')
 
     rgb_init_range = (self.config['initial_max_rgb']
         - self.config['initial_min_rgb'])
@@ -337,19 +362,19 @@ class PopulationColourRGBTransforms(torch.nn.Module):
 
     self.reds = torch.nn.Parameter(
         torch.tensor(population_reds, dtype=torch.float),
-        requires_grad=True)
+        requires_grad=requires_grad)
     self.greens = torch.nn.Parameter(
         torch.tensor(population_greens, dtype=torch.float),
-        requires_grad=True)
+        requires_grad=requires_grad)
     self.blues = torch.nn.Parameter(
         torch.tensor(population_blues, dtype=torch.float),
-        requires_grad=True)
+        requires_grad=requires_grad)
     self._zeros = torch.nn.Parameter(
         torch.tensor(population_zeros, dtype=torch.float),
         requires_grad=False)
     self.orders = torch.nn.Parameter(
         torch.tensor(population_orders, dtype=torch.float),
-        requires_grad=True)
+        requires_grad=requires_grad)
 
   def _clamp(self):
     self.reds.data = self.reds.data.clamp(
