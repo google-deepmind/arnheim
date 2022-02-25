@@ -51,19 +51,24 @@ class PopulationCollage(torch.nn.Module):
     self._high_res_multiplier = config['high_res_multiplier']
     self._num_patches = self.config['num_patches']
     self._pop_size = pop_size
+    requires_grad = is_high_res == False
 
     # Create the spatial transformer and colour transformer for patches.
     self.spatial_transformer = transformations.PopulationAffineTransforms(
-        config, device, num_patches=self._num_patches, pop_size=pop_size)
+        config, device, num_patches=self._num_patches, pop_size=pop_size,
+        requires_grad=requires_grad, is_high_res=is_high_res)
     if self.config['colour_transformations'] == "HSV space":
       self.colour_transformer = transformations.PopulationColourHSVTransforms(
-          config, device, num_patches=self._num_patches, pop_size=pop_size)
+          config, device, num_patches=self._num_patches, pop_size=pop_size,
+          requires_grad=requires_grad)
     elif self.config['colour_transformations'] == "RGB space":
       self.colour_transformer = transformations.PopulationColourRGBTransforms(
-          config, device, num_patches=self._num_patches, pop_size=pop_size)
+          config, device, num_patches=self._num_patches, pop_size=pop_size,
+          requires_grad=requires_grad)
     else:
       self.colour_transformer = transformations.PopulationOrderOnlyTransforms(
-          config, device, num_patches=self._num_patches, pop_size=pop_size)
+          config, device, num_patches=self._num_patches, pop_size=pop_size,
+          requires_grad=requires_grad)
     if config["torch_device"] == "cuda":
       self.spatial_transformer = self.spatial_transformer.cuda()
       self.colour_transformer = self.colour_transformer.cuda()
@@ -85,53 +90,62 @@ class PopulationCollage(torch.nn.Module):
     self.patch_indices = [np.arange(self._num_patches) % len(self._dataset)
                           for _ in range(pop_size)]
 
-    # Patches in low and high-res.
+    # Patches in low and high-res, will be initialised on demand.
     self.patches = None
-    self.store_patches()
 
   def store_patches(self, population_idx=None):
     """Store the image patches for each population element."""
+    if self._high_res:
+      for _ in range(20):
+        print('NOT STORING HIGH-RES PATCHES')
+      return
     t0 = time.time()
 
     if population_idx is not None and self.patches is not None:
-      list_indices = [population_idx]
-      #print(f'Reload {NUM_PATCHES} image patches for [{population_idx}]')
+      list_indices_population = [population_idx]
+      print(f'Reload {NUM_PATCHES} image patches for [{population_idx}]')
       self.patches[population_idx, :, :4, :, :] = 0
     else:
-      list_indices = np.arange(self._pop_size)
-      if self._high_res:
-        self.patches = torch.zeros(
-            1, self._num_patches, 5,
-            self._canvas_height * self._high_res_multiplier,
-            self._canvas_width * self._high_res_multiplier
-            ).to('cpu')
-      else:
-        self.patches = torch.zeros(
-            self._pop_size, self._num_patches, 5, self._canvas_height,
-            self._canvas_width).to(self.device)
-      self.patches[:, :, 4, :, :] = 1.0
+      list_indices_population = np.arange(self._pop_size)
+      self.patches = torch.zeros(
+          self._pop_size, self._num_patches, 5, self._canvas_height,
+          self._canvas_width).to(self.device)
 
     # Put the segmented data into the patches.
-    for i in list_indices:
+    for i in list_indices_population:
       for j in range(self._num_patches):
-        k = self.patch_indices[i][j]
-        patch_j = torch.tensor(
-            self._dataset[k].swapaxes(0, 2) / 255.0).to(self.device)
-        width_j = patch_j.shape[1]
-        height_j = patch_j.shape[2]
-        if self._high_res:
-          w0 = int((self._canvas_width * self._high_res_multiplier - width_j)
-                   / 2.0)
-          h0 = int((self._canvas_height * self._high_res_multiplier - height_j)
-                   / 2.0)
-        else:
-          w0 = int((self._canvas_width - width_j) / 2.0)
-          h0 = int((self._canvas_height - height_j) / 2.0)
-        if w0 < 0 or h0 < 0:
-          import pdb; pdb.set_trace()
-        self.patches[i, j, :4, w0:(w0 + width_j), h0:(h0 + height_j)] = patch_j
+        patch_i_j = self._fetch_patch(i, j, self._high_res)
+        self.patches[i, j, ...] = patch_i_j
     t1 = time.time()
-    #print('Updated patches in {:.3f}s'.format(t1-t0))
+    print('Updated patches in {:.3f}s'.format(t1-t0))
+
+  def _fetch_patch(self, idx_population, idx_patch, is_high_res):
+    """Helper function to fetch a patch and store on the whole canvas."""
+    k = self.patch_indices[idx_population][idx_patch]
+    patch_j = torch.tensor(
+        self._dataset[k].swapaxes(0, 2) / 255.0).to(self.device)
+    width_j = patch_j.shape[1]
+    height_j = patch_j.shape[2]
+    if is_high_res:
+      w0 = int((self._canvas_width * self._high_res_multiplier - width_j)
+               / 2.0)
+      h0 = int((self._canvas_height * self._high_res_multiplier - height_j)
+               / 2.0)
+      mapped_patch = torch.zeros(
+          5,
+          self._canvas_height * self._high_res_multiplier,
+          self._canvas_width * self._high_res_multiplier
+          ).to('cpu')
+    else:
+      w0 = int((self._canvas_width - width_j) / 2.0)
+      h0 = int((self._canvas_height - height_j) / 2.0)
+      mapped_patch = torch.zeros(
+          5, self._canvas_height, self._canvas_width).to(self.device)
+    if w0 < 0 or h0 < 0:
+      import pdb; pdb.set_trace()
+    mapped_patch[4, :, :] = 1.0
+    mapped_patch[:4, w0:(w0 + width_j), h0:(h0 + height_j)] = patch_j
+    return mapped_patch
 
   def copy_and_mutate_s(self, parent, child):
     with torch.no_grad():
@@ -155,17 +169,25 @@ class PopulationCollage(torch.nn.Module):
     assert idx_to < self._pop_size
     with torch.no_grad():
       self.patch_indices[idx_to] = copy.deepcopy(other.patch_indices[idx_from])
-      self.store_patches(idx_to)
       self.spatial_transformer.copy_from(
           other.spatial_transformer, idx_to, idx_from)
       self.colour_transformer.copy_from(
           other.colour_transformer, idx_to, idx_from)
+      if self._high_res is False:
+        self.store_patches(idx_to)
 
   def forward(self, params=None):
     """Input-less forward function."""
 
+    assert self._high_res == False
+    if self.patches is None:
+      self.store_patches()
     shifted_patches = self.spatial_transformer(self.patches)
     background_image = self.background_image
+    if params is not None and 'no_background' in params:
+      print('Not using background_image')
+      background_image = None
+
     self.coloured_patches = self.colour_transformer(shifted_patches)
     if self.config['render_method'] == "transparency":
       img = rendering.population_render_transparency(self.coloured_patches,
@@ -187,9 +209,130 @@ class PopulationCollage(torch.nn.Module):
           invert_colours=self.config['invert_colours'], b=background_image)
     else:
       print("Unhandled render method")
+    if params is not None and 'no_background' in params:
+      print('Setting alpha to zero outside of patches')
+      mask = self.coloured_patches[:, :, 3:4, :, :].sum(1) > 0
+      mask = mask.permute(0, 2, 3, 1)
+      img = torch.concat([img, mask], axis=-1)
+    print(img.size())
+    return img
+
+  def forward_high_res(self, params=None):
+    """Input-less forward function."""
+
+    assert self._high_res == True
+
+    max_render_size = params.get('max_block_size_high_res', 1000)
+    w = self._canvas_width * self._high_res_multiplier
+    h = self._canvas_height * self._high_res_multiplier
+    if (self._high_res_multiplier % 8 == 0 and
+        self._canvas_width * 8 < max_render_size and
+        self._canvas_height * 8 < max_render_size):
+      step_w = 8
+      step_h = 8
+      num_w = int(self._high_res_multiplier / 8)
+      num_h = int(self._high_res_multiplier / 8)
+      delta_w = self._canvas_width * 8
+      delta_h = self._canvas_height * 8
+    elif (self._high_res_multiplier % 4 == 0 and
+        self._canvas_width * 4 < max_render_size and
+        self._canvas_height * 4 < max_render_size):
+      step_w = 4
+      step_h = 4
+      num_w = int(self._high_res_multiplier / 4)
+      num_h = int(self._high_res_multiplier / 4)
+      delta_w = self._canvas_width * 4
+      delta_h = self._canvas_height * 4
+    elif (self._high_res_multiplier % 2 == 0 and
+        self._canvas_width * 2 < max_render_size and
+        self._canvas_height * 2 < max_render_size):
+      step_w = 2
+      step_h = 2
+      num_w = int(self._high_res_multiplier / 2)
+      num_h = int(self._high_res_multiplier / 2)
+      delta_w = self._canvas_width * 2
+      delta_h = self._canvas_height * 2
+    else:
+      step_w = 1
+      step_h = 1
+      num_w = self._high_res_multiplier
+      num_h = self._high_res_multiplier
+      delta_w = self._canvas_width
+      delta_h = self._canvas_height
+
+    img = torch.zeros((1, h, w, 4))
+    img[..., 3] = 1.0
+
+    background_image = self.background_image
+    if params is not None and 'no_background' in params:
+      print('Not using background_image')
+      background_image = None
+
+    for u in range(num_w):
+      for v in range(num_h):
+        x0 = u * delta_w
+        x1 = (u + 1) * delta_w
+        y0 = v * delta_h
+        y1 = (v + 1) * delta_h
+        print(f"[{u}, {v}] idx [{x0}:{x1}], [{y0}:{y1}]")
+
+        # Extract full patches, apply spatial transform individually and crop.
+        shifted_patches_uv = []
+        for idx_patch in range(self._num_patches):
+          patch = self._fetch_patch(0, idx_patch, True).unsqueeze(0)
+          patch_uv = self.spatial_transformer(patch, idx_patch)
+          patch_uv = patch_uv[:, :, :, y0:y1, x0:x1]
+          shifted_patches_uv.append(patch_uv)
+        shifted_patches_uv = torch.cat(shifted_patches_uv, 1)
+
+        # Crop background?
+        if background_image is not None:
+          background_image_uv = background_image[:, y0:y1, x0:x1]
+        else:
+          background_image_uv = None
+
+        # Appy colour transform and render.
+        coloured_patches_uv = self.colour_transformer(shifted_patches_uv)
+        if self.config['render_method'] == "transparency":
+          img_uv = rendering.population_render_transparency(coloured_patches_uv,
+              invert_colours=self.config['invert_colours'],
+              b=background_image_uv)
+        elif self.config['render_method'] == "masked_transparency_clipped":
+          img_uv = rendering.population_render_masked_transparency(
+              coloured_patches_uv, mode="clipped",
+              invert_colours=self.config['invert_colours'],
+              b=background_image_uv)
+        elif self.config['render_method'] == "masked_transparency_normed":
+          img_uv = rendering.population_render_masked_transparency(
+              coloured_patches_uv, mode="normed",
+              invert_colours=self.config['invert_colours'],
+              b=background_image_uv)
+        elif self.config['render_method'] == "opacity":
+          if params is not None and 'gamma' in params:
+            gamma = params['gamma']
+          else:
+            gamma = None
+          img_uv = rendering.population_render_overlap(coloured_patches_uv,
+              invert_colours=self.config['invert_colours'],
+              b=background_image_uv)
+        else:
+          print("Unhandled render method")
+
+        if params is not None and 'no_background' in params:
+          print('Setting alpha to zero outside of patches')
+          mask_uv = coloured_patches_uv[:, :, 3:4, :, :].sum(1) > 0
+          mask_uv = mask_uv.permute(0, 2, 3, 1)
+          img_uv = torch.concat([img_uv, mask_uv], axis=-1)
+          img[0, y0:y1, x0:x1, :4] = img_uv
+        else:
+          img[0, y0:y1, x0:x1, :3] = img_uv
+        print(f"Finished [{u}, {v}] idx [{x0}:{x1}], [{y0}:{y1}]")
+
+    print(img.size())
     return img
 
   def tensors_to(self, device):
     self.spatial_transformer.tensor_to(device)
     self.colour_transformer.tensor_to(device)
-    self.patches = self.patches.to(device)
+    if self.patches is not None:
+      self.patches = self.patches.to(device)

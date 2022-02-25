@@ -201,9 +201,10 @@ class CollageMaker():
                       background_image_high_res,
                       gamma=1.0,
                       show=True,
-                      save=True):
+                      save=True,
+                      no_background=False):
     """Save and/or show a high res render using high-res patches."""
-    generator = PopulationCollage(
+    generator_cpu = PopulationCollage(
         config=self._config,
         device=self._device,
         is_high_res=True,
@@ -213,35 +214,38 @@ class CollageMaker():
     idx_best = np.argmin(self._losses_history[-1])
     lowest_loss = self._losses_history[-1][idx_best]
     print(f'Lowest loss: {lowest_loss} @ index {idx_best}: ')
-    generator.copy_from(self._generator, 0, idx_best)
-    # Show high res version given a generator
-    generator_cpu = copy.deepcopy(generator)
-    generator_cpu = generator_cpu.to('cpu')
-    generator_cpu.tensors_to('cpu')
+    generator_cpu.copy_from(self._generator, 0, idx_best)
 
-    params = {'gamma': gamma}
+    params = {'gamma': gamma,
+              'max_block_size_high_res': self._config.get(
+                  'max_block_size_high_res')}
+    if no_background:
+      params['no_background'] = True
     with torch.no_grad():
-      img_high_res = generator_cpu.forward(params)
+      img_high_res = generator_cpu.forward_high_res(params)
     img = img_high_res.detach().cpu().numpy()[0]
 
     img = np.clip(img, 0.0, 1.0)
     if save or show:
       # Swap Red with Blue
-      img = img[...,[2, 1, 0]]
+      if img.shape[2] == 4:
+        print('Image has alpha channel')
+        img = img[..., [2, 1, 0, 3]]
+      else:
+        img = img[..., [2, 1, 0]]
       img = np.clip(img, 0.0, 1.0) * 255
     if save:
-      image_filename = f"{self._output_dir}/{self._file_basename}.png"
+      if no_background:
+        image_filename = f"{self._output_dir}/{self._file_basename}_no_bkgd.png"
+      else:
+        image_filename = f"{self._output_dir}/{self._file_basename}.png"
       cv2.imwrite(image_filename, img)
     if show:
       video_utils.cv2_imshow(img)
 
-    all_patches = generator_cpu.coloured_patches.detach().cpu().numpy()
-    background_image = generator_cpu.background_image.detach().cpu().numpy()
-    all_arrays = {}
-    all_arrays["all_patches"] = all_patches
-    all_arrays["background_image"] = background_image
+    img = img[:, :, :3]
 
-    return img, all_arrays
+    return img
 
   def finish(self):
     """Finish video writing and save all other data."""
@@ -370,15 +374,20 @@ class CollageTiler():
               device=self._device,
               config=self._config)
         self._collage_maker.loop()
-        collage_img, all_arrays = self._collage_maker.high_res_render(
+        collage_img = self._collage_maker.high_res_render(
             self._segmented_data_high_res,
             self._tile_high_res_bg,
             gamma=1.0,
             show=self._config["gui"],
             save=True)
+        self._collage_maker.high_res_render(
+            self._segmented_data_high_res,
+            self._tile_high_res_bg,
+            gamma=1.0,
+            show=False,
+            save=True,
+            no_background=True)
         self._save_tile(collage_img / 255)
-        if self._config["save_all_arrays"]:
-          self._save_tile_arrays(all_arrays)
 
         (last_step, last_loss) = self._collage_maker.finish()
         res_training[f"tile_{self._y}_{self._x}_loss"] = last_loss

@@ -71,7 +71,7 @@ def print_size_segmented_data(segmented_data, show=True):
       im_bgr = im_i[:, :, :3]
       im_mask = np.tile(im_i[:, :, 3:], (1, 1, 3))
       im_render = np.concatenate([im_bgr, im_mask], 1)
-      cv2_imshow(im_render)
+      video_utils.cv2_imshow(im_render)
   print(f"{len(segmented_data)} patches, max {shape_max}, min {shape_min}\n")
 
 
@@ -97,7 +97,7 @@ def get_segmented_data_initial(config):
     repo_file = config["patch_set"]
     repo_root = config["patch_repo_root"]
     segmented_data_initial = cached_url_download(
-        f"{repo_root}/{repo_file}")
+        f"{repo_root}/collage_patches/{repo_file}")
 
   segmented_data_initial_tmp = []
   for i in range(len(segmented_data_initial)):
@@ -128,21 +128,17 @@ def get_segmented_data(config, index):
     numpy arrays: low and high resolution patch data.
   """
   # Select tile's patch set and/or parameters if multiple provided.
-  if "multiple_patch_set" in config and isinstance(
-      config["multiple_patch_set"], list):
+  if isinstance(config["multiple_patch_set"], list):
     config["patch_set"] = config["multiple_patch_set"][
         index % len(config["multiple_patch_set"])]
-  if "multiple_fixed_scale_patches" in config and isinstance(
-      config["multiple_fixed_scale_patches"], list):
+  if isinstance(config["multiple_fixed_scale_patches"], list):
     config["fixed_scale_patches"] = config["multiple_fixed_scale_patches"][
         index % len(config["multiple_fixed_scale_patches"])] == "True"
-  if "multiple_patch_max_proportion" in config and isinstance(
-      config["multiple_patch_max_proportion"], list):
+  if isinstance(config["multiple_patch_max_proportion"], list):
     config["patch_max_proportion"] = int(config[
         "multiple_patch_max_proportion"][
         index % len(config["multiple_patch_max_proportion"])])
-  if "multiple_fixed_scale_coeff" in config and isinstance(
-      config["multiple_fixed_scale_coeff"], list):
+  if isinstance(config["multiple_fixed_scale_coeff"], list):
     config["fixed_scale_coeff"] = float(config["multiple_fixed_scale_coeff"][
         index % len(config["multiple_fixed_scale_coeff"])])
 
@@ -198,6 +194,7 @@ def get_segmented_data(config, index):
 
       # Resize the high-res patch?
       if coeff_i_large < 1.0:
+        print(f"Patch {patch_i} scaled by {coeff_i_large:.2f}")
         segmented_data_high_res_i = resize_patch(segmented_data_initial_i,
                                                 coeff_i_large)
       else:
@@ -226,8 +223,8 @@ def get_segmented_data(config, index):
 
   if SHOW_PATCHES:
     print("Patch sizes during optimisation:")
-    print_size_segmented_data(segmented_data, show=False)
+    print_size_segmented_data(segmented_data, show=config["gui"])
     print("Patch sizes for high-resolution final image:")
-    print_size_segmented_data(segmented_data_high_res, show=False)
+    print_size_segmented_data(segmented_data_high_res, show=config["gui"])
 
   return segmented_data, segmented_data_high_res
