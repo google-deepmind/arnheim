@@ -103,7 +103,7 @@ class PopulationCollage(torch.nn.Module):
 
     if population_idx is not None and self.patches is not None:
       list_indices_population = [population_idx]
-      print(f'Reload {self._num_patches)} image patches for [{population_idx}]')
+      print(f'Reload {self._num_patches} image patches for [{population_idx}]')
       self.patches[population_idx, :, :4, :, :] = 0
     else:
       list_indices_population = np.arange(self._pop_size)
