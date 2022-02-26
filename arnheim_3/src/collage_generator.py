@@ -214,7 +214,6 @@ class PopulationCollage(torch.nn.Module):
       mask = self.coloured_patches[:, :, 3:4, :, :].sum(1) > 0
       mask = mask.permute(0, 2, 3, 1)
       img = torch.concat([img, mask], axis=-1)
-    print(img.size())
     return img
 
   def forward_high_res(self, params=None):

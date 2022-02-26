@@ -97,7 +97,7 @@ def get_segmented_data_initial(config):
     repo_file = config["patch_set"]
     repo_root = config["patch_repo_root"]
     segmented_data_initial = cached_url_download(
-        f"{repo_root}/collage_patches/{repo_file}")
+        f"{repo_root}/{repo_file}")
 
   segmented_data_initial_tmp = []
   for i in range(len(segmented_data_initial)):
@@ -128,17 +128,21 @@ def get_segmented_data(config, index):
     numpy arrays: low and high resolution patch data.
   """
   # Select tile's patch set and/or parameters if multiple provided.
-  if isinstance(config["multiple_patch_set"], list):
+  if "multiple_patch_set" in config and isinstance(
+      config["multiple_patch_set"], list):
     config["patch_set"] = config["multiple_patch_set"][
         index % len(config["multiple_patch_set"])]
-  if isinstance(config["multiple_fixed_scale_patches"], list):
+  if "multiple_fixed_scale_patches" in config and isinstance(
+      config["multiple_fixed_scale_patches"], list):
     config["fixed_scale_patches"] = config["multiple_fixed_scale_patches"][
         index % len(config["multiple_fixed_scale_patches"])] == "True"
-  if isinstance(config["multiple_patch_max_proportion"], list):
+  if "multiple_patch_max_proportion" in config and isinstance(
+      config["multiple_patch_max_proportion"], list):
     config["patch_max_proportion"] = int(config[
         "multiple_patch_max_proportion"][
         index % len(config["multiple_patch_max_proportion"])])
-  if isinstance(config["multiple_fixed_scale_coeff"], list):
+  if "multiple_fixed_scale_coeff" in config and isinstance(
+      config["multiple_fixed_scale_coeff"], list):
     config["fixed_scale_coeff"] = float(config["multiple_fixed_scale_coeff"][
         index % len(config["multiple_fixed_scale_coeff"])])
 
@@ -223,8 +227,8 @@ def get_segmented_data(config, index):
 
   if SHOW_PATCHES:
     print("Patch sizes during optimisation:")
-    print_size_segmented_data(segmented_data, show=config["gui"])
+    print_size_segmented_data(segmented_data, show=False)
     print("Patch sizes for high-resolution final image:")
-    print_size_segmented_data(segmented_data_high_res, show=config["gui"])
+    print_size_segmented_data(segmented_data_high_res, show=False)
 
   return segmented_data, segmented_data_high_res
