@@ -86,7 +86,7 @@ class PopulationCollage(torch.nn.Module):
     self._dataset = segmented_data
     #print(f'There are {len(self._dataset)} image patches in the dataset')
 
-    # Initial set of indices, pointing to the NUM_PATCHES first dataset images.
+    # Initial set of indices pointing to self._num_patches first dataset images.
     self.patch_indices = [np.arange(self._num_patches) % len(self._dataset)
                           for _ in range(pop_size)]
 
@@ -103,7 +103,7 @@ class PopulationCollage(torch.nn.Module):
 
     if population_idx is not None and self.patches is not None:
       list_indices_population = [population_idx]
-      print(f'Reload {NUM_PATCHES} image patches for [{population_idx}]')
+      print(f'Reload {self._num_patches)} image patches for [{population_idx}]')
       self.patches[population_idx, :, :4, :, :] = 0
     else:
       list_indices_population = np.arange(self._pop_size)
