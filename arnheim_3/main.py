@@ -217,7 +217,8 @@ ap.add_argument("--multiple_fixed_scale_coeff", default=None,
 ap.add_argument("--patch_set", type=str, default="animals.npy",
                 help="Name of Numpy file with patches")
 ap.add_argument("--patch_repo_root", type=str,
-                default="https://github.com/deepmind/arnheim/raw/main",
+                default=
+                "https://github.com/deepmind/arnheim/raw/main/collage_patches",
                 help="URL to patches")
 ap.add_argument("--url_to_patch_file", type=str, default="",
                 help="URL to a patch file")
