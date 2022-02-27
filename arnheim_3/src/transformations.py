@@ -45,8 +45,8 @@ class PopulationAffineTransforms(torch.nn.Module):
     self._max_rot = self.config['max_rot_deg'] * np.pi / 180.
     matrices_translation = (
         (np.random.rand(pop_size, num_patches, 2, 1)
-            * (self.config['max_trans'] - self.config['min_trans']))
-        + self.config['min_trans'])
+            * (self.config['max_trans_init'] - self.config['min_trans_init']))
+        + self.config['min_trans_init'])
     matrices_rotation = (
         (np.random.rand(pop_size, num_patches, 1, 1)
             * (self._max_rot - self._min_rot)) + self._min_rot)
