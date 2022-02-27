@@ -206,7 +206,7 @@ class CollageMaker():
     """Save and/or show a high res render using high-res patches."""
     generator_cpu = PopulationCollage(
         config=self._config,
-        device=self._device,
+        device="cpu",
         is_high_res=True,
         pop_size=1,
         segmented_data=segmented_data_high_res,
@@ -215,12 +215,14 @@ class CollageMaker():
     lowest_loss = self._losses_history[-1][idx_best]
     print(f'Lowest loss: {lowest_loss} @ index {idx_best}: ')
     generator_cpu.copy_from(self._generator, 0, idx_best)
+    generator_cpu = generator_cpu.to("cpu")
+    generator_cpu.tensors_to("cpu")
 
-    params = {'gamma': gamma,
-              'max_block_size_high_res': self._config.get(
-                  'max_block_size_high_res')}
+    params = {"gamma": gamma,
+              "max_block_size_high_res": self._config.get(
+                  "max_block_size_high_res")}
     if no_background:
-      params['no_background'] = True
+      params["no_background"] = True
     with torch.no_grad():
       img_high_res = generator_cpu.forward_high_res(params)
     img = img_high_res.detach().cpu().numpy()[0]
@@ -229,7 +231,7 @@ class CollageMaker():
     if save or show:
       # Swap Red with Blue
       if img.shape[2] == 4:
-        print('Image has alpha channel')
+        print("Image has alpha channel")
         img = img[..., [2, 1, 0, 3]]
       else:
         img = img[..., [2, 1, 0]]

@@ -65,7 +65,7 @@ ap.set_defaults(gui=False)
 # Video and tracing.
 ap.add_argument("--video_steps", type=int, default=0,
                 help="Number of steps between two video frames")
-ap.add_argument("--trace_every", type=int, default=50,
+ap.add_argument("--trace_every", type=int, default=500,
                 help="Number of steps between two logging traces")
 ap.add_argument('--population_video', dest='population_video',
                 action='store_true', help='Write the video of population?')
@@ -113,6 +113,10 @@ ap.add_argument("--min_trans", type=float, default=-1.,
                 help="Translation min for X and Y")
 ap.add_argument("--max_trans", type=float, default=1.,
                 help="Translation max for X and Y")
+ap.add_argument("--min_trans_init", type=float, default=-1.,
+                help="Initial translation min for X and Y")
+ap.add_argument("--max_trans_init", type=float, default=1.,
+                help="Initial translation max for X and Y")
 ap.add_argument("--min_scale", type=float, default=1.,
                 help="Scale min (> 1 means zoom out and < 1 means zoom in)")
 ap.add_argument("--max_scale", type=float, default=2.,
