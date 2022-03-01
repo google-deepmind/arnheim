@@ -75,15 +75,16 @@ def moving_average(a, n=3) :
   return ret[n - 1:] / n
 
 
-def plot_and_save_losses(loss_history, title="Losses", filename=None):
+def plot_and_save_losses(loss_history, title="Losses", filename=None, show=True):
   losses = np.array(loss_history)
   if filename:
+    np.save(filename + ".npy", losses, allow_pickle=True)
+  if show:
     plt.figure(figsize=(10,10))
     plt.xlabel("Training steps")
     plt.ylabel("Loss")
     plt.title(title)
     plt.plot(moving_average(losses, n=3))
-    np.save(filename + ".npy", losses, allow_pickle=True)
     plt.savefig(filename + ".png")
 
 

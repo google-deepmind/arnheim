@@ -388,7 +388,7 @@ print(f"Storing results in {output_dir}\n")
 pathlib.Path(output_dir).mkdir(parents=True, exist_ok=True)
 
 # Save the config.
-config_filename = config["output_dir"] + "config.yaml"
+config_filename = config["output_dir"] + '/' + "config.yaml"
 with open(config_filename, "w") as f:
   yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
 

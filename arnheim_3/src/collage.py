@@ -255,7 +255,8 @@ class CollageMaker():
       losses_filename = f"{self._output_dir}/{self._file_basename}_losses"
       training.plot_and_save_losses(self._losses_history,
                                     title=f"{self._file_basename} Losses",
-                                    filename=losses_filename)
+                                    filename=losses_filename,
+                                    show=self._config["gui"])
     if self._video_steps:
       self._video_writer.close()
     if self._population_video:
