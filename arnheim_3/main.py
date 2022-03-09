@@ -443,10 +443,15 @@ print(f"All prompts: {all_prompts}")
 
 # Background.
 background_image = None
-if len(config["background_url"]) > 0:
+background_url = config["background_url"]
+if len(background_url) > 0:
   # Load background image from URL.
-  background_image = video_utils.load_image(config["background_url"],
-                                            show=config["gui"])
+  if background_url.startswith("http"):
+    background_image = video_utils.cached_url_download(background_url,
+                                                       format="image_as_np")
+  else:
+    background_image = video_utils.load_image(background_url,
+                                              show=config["gui"])
 else:
   background_image = np.ones((10, 10, 3), dtype=np.float32)
   background_image[:, :, 0] = config["background_red"] / 255.
