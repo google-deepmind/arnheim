@@ -21,7 +21,11 @@
 # Video utility functions, image rendering and display.
 
 import cv2
+import io
 import numpy as np
+import os
+import pathlib
+import requests
 import torch
 
 
@@ -44,6 +48,25 @@ def load_image(filename, as_cv2_image=False, show=False):
     return img  # With colour format BGR
   img = np.asarray(img)
   return img[..., ::-1] / 255.  # Reverse colour dim to convert BGR to RGB
+
+
+def cached_url_download(url, format="np_array"):
+  cache_filename = os.path.basename(url)
+  cache = pathlib.Path(cache_filename)
+  if not cache.is_file():
+    print(f"Downloading {cache_filename} from {url}")
+    r = requests.get(url)
+    bytesio_object = io.BytesIO(r.content)
+    with open(cache_filename, "wb") as f:
+      f.write(bytesio_object.getbuffer())
+  else:
+    print("Using cached version of " + cache_filename)
+  if format == "np_array":
+    return np.load(cache, allow_pickle=True)
+  elif format == "cv2_image":
+    return load_image(cache.name, as_cv2_image=True, show=False)
+  elif format == "image_as_np":
+    return load_image(cache.name, as_cv2_image=False, show=False)
 
 
 def layout_img_batch(img_batch, max_display=None):

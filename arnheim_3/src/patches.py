@@ -20,19 +20,13 @@
 
 # Loading and processing collage patches.
 
-import io
-import os
-import pathlib
-import requests
-
 import cv2
 import numpy as np
 
-
 from .video_utils import cv2_imshow
+from .video_utils import cached_url_download
 
-
-SHOW_PATCHES = True
+SHOW_PATCHES = False
 
 
 def add_binary_alpha_mask(patch):
@@ -73,20 +67,6 @@ def print_size_segmented_data(segmented_data, show=True):
       im_render = np.concatenate([im_bgr, im_mask], 1)
       video_utils.cv2_imshow(im_render)
   print(f"{len(segmented_data)} patches, max {shape_max}, min {shape_min}\n")
-
-
-def cached_url_download(url):
-  cache_filename = os.path.basename(url)
-  cache = pathlib.Path(cache_filename)
-  if not cache.is_file():
-    print(f"Downloading {cache_filename} from {url}")
-    r = requests.get(url)
-    bytesio_object = io.BytesIO(r.content)
-    with open(cache_filename, "wb") as f:
-      f.write(bytesio_object.getbuffer())
-  else:
-    print("Using cached version of " + cache_filename)
-  return np.load(cache, allow_pickle=True)
 
 
 def get_segmented_data_initial(config):
@@ -227,8 +207,8 @@ def get_segmented_data(config, index):
 
   if SHOW_PATCHES:
     print("Patch sizes during optimisation:")
-    print_size_segmented_data(segmented_data, show=False)
+    print_size_segmented_data(segmented_data, show=config['gui'])
     print("Patch sizes for high-resolution final image:")
-    print_size_segmented_data(segmented_data_high_res, show=False)
+    print_size_segmented_data(segmented_data_high_res, show=config['gui'])
 
   return segmented_data, segmented_data_high_res
