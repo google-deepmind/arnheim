@@ -103,7 +103,6 @@ class PopulationCollage(torch.nn.Module):
 
     if population_idx is not None and self.patches is not None:
       list_indices_population = [population_idx]
-      print(f'Reload {self._num_patches} image patches for [{population_idx}]')
       self.patches[population_idx, :, :4, :, :] = 0
     else:
       list_indices_population = np.arange(self._pop_size)
@@ -117,7 +116,6 @@ class PopulationCollage(torch.nn.Module):
         patch_i_j = self._fetch_patch(i, j, self._high_res)
         self.patches[i, j, ...] = patch_i_j
     t1 = time.time()
-    print('Updated patches in {:.3f}s'.format(t1-t0))
 
   def _fetch_patch(self, idx_population, idx_patch, is_high_res):
     """Helper function to fetch a patch and store on the whole canvas."""
