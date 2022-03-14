@@ -82,6 +82,8 @@ class CollageMaker():
     self._initial_search_size = config['initial_search_size']
 
     self._video_steps = config["video_steps"]
+    self._video_writer = None
+    self._population_video_writer = None
     if self._video_steps:
       self._video_writer = video_utils.VideoWriter(
           filename=f"{self._output_dir}/{self._file_basename}.mp4")
@@ -169,8 +171,7 @@ class CollageMaker():
         print(f"Aborting video creation (does not work when interrupted).")
         self._video_steps = 0
         self._video_writer = None
-        if self._population_video_writer:
-          self._population_video_writer = None
+        self._population_video_writer = None
 
     while self._step < self._optim_steps:
       last_step = self._step == (self._optim_steps - 1)
@@ -259,7 +260,7 @@ class CollageMaker():
                                     show=self._config["gui"])
     if self._video_steps:
       self._video_writer.close()
-    if self._population_video:
+    if self._population_video_writer:
       self._population_video_writer.close()
     metadata_filename = f"{self._output_dir}/{self._file_basename}.yaml"
     with open(metadata_filename, "w") as f:
@@ -279,7 +280,7 @@ class CollageMaker():
       best_img = img_batch[np.argmin(losses)]
       self._video_writer.add(cv2.resize(
           best_img, (best_img.shape[1] * 3, best_img.shape[0] * 3)))
-      if self._population_video:
+      if self._population_video_writer:
         laid_out = video_utils.layout_img_batch(img_batch)
         self._population_video_writer.add(cv2.resize(
             laid_out, (laid_out.shape[1] * 2, laid_out.shape[0] * 2)))
