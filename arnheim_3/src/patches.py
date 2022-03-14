@@ -178,7 +178,7 @@ def get_segmented_data(config, index):
 
       # Resize the high-res patch?
       if coeff_i_large < 1.0:
-        print(f"Patch {patch_i} scaled by {coeff_i_large:.2f}")
+        # print(f"Patch {patch_i} scaled by {coeff_i_large:.2f}")
         segmented_data_high_res_i = resize_patch(segmented_data_initial_i,
                                                 coeff_i_large)
       else:
