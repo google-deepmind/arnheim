@@ -17,6 +17,7 @@ optim_steps: 10000
 learning_rate: 0.1
 
 ### Load segmented patches
+patch_repo_root: https://storage.googleapis.com/dm_arnheim_3_assets/collage_patches
 patch_set: "animals.npy"
 
 ### Resize image patches to low- and high-res.
