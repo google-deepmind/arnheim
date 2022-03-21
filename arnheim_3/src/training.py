@@ -24,6 +24,7 @@
 from matplotlib import pyplot as plt
 
 import numpy as np
+import cv2
 import torch
 import torchvision.transforms as transforms
 
@@ -230,6 +231,37 @@ def evaluation(t, clip_enc, generator, augment_trans, text_features,
 
   # Compute and add losses after augmenting the image with transforms.
   img_batch = torch.clip(img_batch, 0, 1)  # clip the images.
+
+  imgs_np = img_batch.unsqueeze(0).detach().cpu().numpy()
+  projections = []
+  for i in range(imgs_np.shape[1]):
+    #show_and_save(img_batch[i].unsqueeze(0), config, img_format="SCHW",
+    #  show=True)
+    # cv2.namedWindow('generated', cv2.WINDOW_AUTOSIZE)
+    #cv2.namedWindow('generated', cv2.WND_PROP_FULLSCREEN)
+    #cv2.setWindowProperty("generated", cv2.WND_PROP_FULLSCREEN,
+    #    cv2.WINDOW_FULLSCREEN)
+    img_np = np.transpose(imgs_np.squeeze(0)[i], (1, 2, 0))
+    img_np = cv2.resize(img_np, (2000,2000))
+    cv2.imshow('generated', img_np)
+    cv2.waitKey(100)
+    cap = cv2.VideoCapture(0)
+    ret, frame = cap.read()
+    #show_and_save(frame, config, img_format="SHWC", show=True)
+
+    frame = frame[200:700, 1000:1500, :]
+    # import pdb; pdb.set_trace()
+    frame = cv2.resize(frame, (224, 224))
+    cv2.imshow('camera', frame)
+    cv2.waitKey(1)
+    frame = frame.swapaxes(0, 2)
+    projections.append(frame)
+    # projections.append(np.expand_dims(frame, 0))
+
+  # # import pdb; pdb.set_trace()
+  # projections = np.array(projections)
+  # img_batch = torch.from_numpy(projections)
+
   image_features = clip_enc.encode_image(img_batch)
   count = 0
   for n in range(num_augs):  # number of augmentations or composition images
@@ -247,6 +279,7 @@ def evaluation(t, clip_enc, generator, augment_trans, text_features,
         show_and_save(img_batch[count].unsqueeze(0), config,
             img_format="SCHW", show=config["gui"])
       count += 1
+  print(losses)
   loss = torch.sum(losses) / pop_size
   losses_separate_np = losses.detach().cpu().numpy()
   # Sum losses for all each population individual.

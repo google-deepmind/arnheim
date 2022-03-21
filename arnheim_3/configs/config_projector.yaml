@@ -1,0 +1,37 @@
+---
+# Render methods
+# opacity patches overlay each other using a combination of alpha and depth,
+# transparency _adds_ patch colours (black therefore appearing transparent),
+# and masked transparency blends patches using the alpha channel.
+no-cuda: True
+
+global_prompt: Photorealistic Dutch still life
+  #render_method: "transparency"
+render_method: "masked_transparency_clipped"
+num_patches: 50
+# Colour transformations can be: "none", "RGB space", "HSV space"
+colour_transformations: "RGB space"
+
+# Number of training steps
+optim_steps: 10000
+learning_rate: 0.1
+
+### Load segmented patches
+patch_set: "animals.npy"
+
+### Resize image patches to low- and high-res.
+fixed_scale_patches: True
+fixed_scale_coeff: 0.5
+
+# Configure a background, e.g. uploaded picture or solid colour.
+background_url: ""
+# Background usage: Global: use image across whole image; Local: reuse same image for every tile
+background_use: "Global"
+# Colour configuration for solid colour background
+background_red: 0
+background_green: 0
+background_blue: 0
+
+no-use_image_augmentations: True
+trace_every = 100
+
