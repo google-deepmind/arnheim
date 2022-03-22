@@ -81,7 +81,7 @@ max_multiple_visualizations: 5
 
 ### Load segmented patches
 patch_set: "animals.npy"
-patch_repo_root: "https://storage.googleapis.com/dm_arnheim_3_assets/collage_patches"
+patch_repo_root: https://storage.googleapis.com/dm_arnheim_3_assets/collage_patches
 url_to_patch_file: ""
 
 ### Resize image patches to low- and high-res.
