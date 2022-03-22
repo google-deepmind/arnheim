@@ -1,5 +1,5 @@
 ---
-### Collage configuration
+### Default collage configuration
 # Canvas
 canvas_width: 224
 canvas_height: 224
@@ -81,7 +81,7 @@ max_multiple_visualizations: 5
 
 ### Load segmented patches
 patch_set: "animals.npy"
-patch_repo_root: "https://github.com/deepmind/arnheim/raw/main"
+patch_repo_root: "https://storage.googleapis.com/dm_arnheim_3_assets/collage_patches"
 url_to_patch_file: ""
 
 ### Resize image patches to low- and high-res.
@@ -103,7 +103,7 @@ background_blue: 0
 
 # @title Configure image prompt and content
 # Enter a global description of the image, e.g. 'a photorealistic chicken'
-global_prompt: "Roman mosaic of an unswept floor"
+global_prompt: "a photorealistic chicken"
 
 # @title Tile prompts and tiling settings
 tile_images: False
