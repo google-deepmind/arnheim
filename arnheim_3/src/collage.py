@@ -134,8 +134,7 @@ class CollageMaker():
             pop_size=self._initial_search_size,
             is_high_res=False,
             segmented_data=segmented_data,
-            background_image=background_image,
-            compositional_image=self._compositional_image)
+            background_image=background_image)
         _, _, losses, _ = training.evaluation(
             t=0,
             clip_enc=self._clip_model,
