@@ -1,37 +1,34 @@
-# Copyright 2021 DeepMind Technologies Limited
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-# https://www.apache.org/licenses/LICENSE-2.0
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+"""Loading and processing collage patches.
 
-# Arnheim 3 - Collage
-# Piotr Mirowski, Dylan Banarse, Mateusz Malinowski, Yotam Doron, Oriol Vinyals,
-# Simon Osindero, Chrisantha Fernando
-# DeepMind, 2021-2022
+Arnheim 3 - Collage
+Piotr Mirowski, Dylan Banarse, Mateusz Malinowski, Yotam Doron, Oriol Vinyals,
+Simon Osindero, Chrisantha Fernando
+DeepMind, 2021-2022
 
-# Command-line version of the Google Colab code available at:
-# https://github.com/deepmind/arnheim/blob/main/arnheim_3.ipynb
+Copyright 2021 DeepMind Technologies Limited
 
-# Loading and processing collage patches.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+https://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
 
 import cv2
 import numpy as np
-
-from .video_utils import cv2_imshow
 from .video_utils import cached_url_download
+from .video_utils import cv2_imshow
 
 SHOW_PATCHES = False
 
 
 def add_binary_alpha_mask(patch):
-  """Black pixels treated as having alpha=0, all other pixels have alpha=255"""
-  shape = patch.shape
+  """Black pixels treated as having alpha=0, all other pixels have alpha=255."""
+
   mask = ((patch.sum(2) > 0) * 255).astype(np.uint8)
   return np.concatenate([patch, np.expand_dims(mask, -1)], axis=-1)
 
@@ -43,12 +40,12 @@ def resize_patch(patch, coeff):
 
 
 def print_size_segmented_data(segmented_data, show=True):
+  """Print debug information on patch sizes."""
+
   size_max = 0
   shape_max = None
   size_min = np.infty
   shape_min = None
-  ws = []
-  hs = []
   for i, segment in enumerate(segmented_data):
     segment = segment.swapaxes(0, 1)
     shape_i = segment.shape
@@ -59,19 +56,20 @@ def print_size_segmented_data(segmented_data, show=True):
     if size_i < size_min:
       shape_min = shape_i
       size_min = size_i
-    print(f'Patch {i} of shape {shape_i}')
+    print(f"Patch {i} of shape {shape_i}")
     if show:
       im_i = cv2.cvtColor(segment, cv2.COLOR_RGBA2BGRA)
       im_bgr = im_i[:, :, :3]
       im_mask = np.tile(im_i[:, :, 3:], (1, 1, 3))
       im_render = np.concatenate([im_bgr, im_mask], 1)
-      video_utils.cv2_imshow(im_render)
+      cv2_imshow(im_render)
   print(f"{len(segmented_data)} patches, max {shape_max}, min {shape_min}\n")
 
 
 def get_segmented_data_initial(config):
+  """Load patch file and return segmented image data."""
 
-  if len(config["url_to_patch_file"]) > 0:
+  if config["url_to_patch_file"]:
     segmented_data_initial = cached_url_download(config["url_to_patch_file"])
   else:
     repo_file = config["patch_set"]
@@ -98,7 +96,7 @@ def normalise_patch_brightness(patch):
 
 
 def get_segmented_data(config, index):
-  """ Generate low and high res patch data for a collage.
+  """Generate low and high res patch data for a collage.
 
   Args:
     config: dict, config file and command line args
@@ -120,7 +118,7 @@ def get_segmented_data(config, index):
       config["multiple_patch_max_proportion"], list):
     config["patch_max_proportion"] = int(config[
         "multiple_patch_max_proportion"][
-        index % len(config["multiple_patch_max_proportion"])])
+            index % len(config["multiple_patch_max_proportion"])])
   if "multiple_fixed_scale_coeff" in config and isinstance(
       config["multiple_fixed_scale_coeff"], list):
     config["fixed_scale_coeff"] = float(config["multiple_fixed_scale_coeff"][
@@ -141,15 +139,15 @@ def get_segmented_data(config, index):
   height_large_max = hires_height / config["patch_max_proportion"]
   width_large_max = hires_width / config["patch_max_proportion"]
   print(f"Patch set {config['patch_set']}, fixed_scale_patches? "
-      f"{config['fixed_scale_patches']}, "
-      f"fixed_scale_coeff={config['fixed_scale_coeff']}, "
-      f"patch_max_proportion={config['patch_max_proportion']}")
+        f"{config['fixed_scale_patches']}, "
+        f"fixed_scale_coeff={config['fixed_scale_coeff']}, "
+        f"patch_max_proportion={config['patch_max_proportion']}")
   if config["fixed_scale_patches"]:
     print(f"Max size for fixed scale patches: ({hires_height},{hires_width})")
   else:
     print(
         f"Max patch size on large img: ({height_large_max}, {width_large_max})")
-  print(type(config['fixed_scale_patches']))
+  print(type(config["fixed_scale_patches"]))
   segmented_data = []
   segmented_data_high_res = []
   for patch_i in range(num_patches):
@@ -180,24 +178,23 @@ def get_segmented_data(config, index):
       if coeff_i_large < 1.0:
         # print(f"Patch {patch_i} scaled by {coeff_i_large:.2f}")
         segmented_data_high_res_i = resize_patch(segmented_data_initial_i,
-                                                coeff_i_large)
+                                                 coeff_i_large)
       else:
         segmented_data_high_res_i = np.copy(segmented_data_initial_i)
 
       # Resize the low-res patch.
-      coeff_i = coeff_i_large / config['high_res_multiplier']
+      coeff_i = coeff_i_large / config["high_res_multiplier"]
       segmented_data_i = resize_patch(segmented_data_initial_i, coeff_i)
       shape_i = segmented_data_i.shape
       if (shape_i[0] > canvas_height
-          or shape_i[1] > config['canvas_width']):
+          or shape_i[1] > config["canvas_width"]):
 
         print(f"{shape_i} exceeds canvas ({canvas_height},{canvas_width})")
-        import pdb; pdb.set_trace()
       if config["normalize_patch_brightness"]:
-        segmented_data_i[...,:3] = normalise_patch_brightness(
-            segmented_data_i[...,:3])
-        segmented_data_high_res_i[...,:3] = normalise_patch_brightness(
-            segmented_data_high_res_i[...,:3])
+        segmented_data_i[..., :3] = normalise_patch_brightness(
+            segmented_data_i[..., :3])
+        segmented_data_high_res_i[..., :3] = normalise_patch_brightness(
+            segmented_data_high_res_i[..., :3])
       segmented_data_high_res_i = segmented_data_high_res_i.astype(np.uint8)
       segmented_data_high_res.append(segmented_data_high_res_i)
       segmented_data_i = segmented_data_i.astype(np.uint8)
@@ -207,8 +204,8 @@ def get_segmented_data(config, index):
 
   if SHOW_PATCHES:
     print("Patch sizes during optimisation:")
-    print_size_segmented_data(segmented_data, show=config['gui'])
+    print_size_segmented_data(segmented_data, show=config["gui"])
     print("Patch sizes for high-resolution final image:")
-    print_size_segmented_data(segmented_data_high_res, show=config['gui'])
+    print_size_segmented_data(segmented_data_high_res, show=config["gui"])
 
   return segmented_data, segmented_data_high_res

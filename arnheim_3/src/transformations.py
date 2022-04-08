@@ -1,24 +1,22 @@
-# Copyright 2021 DeepMind Technologies Limited
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-# https://www.apache.org/licenses/LICENSE-2.0
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+"""Colour and affine transform classes.
 
-# Arnheim 3 - Collage
-# Piotr Mirowski, Dylan Banarse, Mateusz Malinowski, Yotam Doron, Oriol Vinyals,
-# Simon Osindero, Chrisantha Fernando
-# DeepMind, 2021-2022
+Arnheim 3 - Collage
+Piotr Mirowski, Dylan Banarse, Mateusz Malinowski, Yotam Doron, Oriol Vinyals,
+Simon Osindero, Chrisantha Fernando
+DeepMind, 2021-2022
 
-# Command-line version of the Google Colab code available at:
-# https://github.com/deepmind/arnheim/blob/main/arnheim_3.ipynb
+Copyright 2021 DeepMind Technologies Limited
 
-# Colour and affine transform classes.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+https://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
 
 from kornia.color import hsv
 
@@ -45,14 +43,14 @@ class PopulationAffineTransforms(torch.nn.Module):
     self._max_rot = self.config['max_rot_deg'] * np.pi / 180.
     matrices_translation = (
         (np.random.rand(pop_size, num_patches, 2, 1)
-            * (self.config['max_trans_init'] - self.config['min_trans_init']))
+         * (self.config['max_trans_init'] - self.config['min_trans_init']))
         + self.config['min_trans_init'])
     matrices_rotation = (
         (np.random.rand(pop_size, num_patches, 1, 1)
-            * (self._max_rot - self._min_rot)) + self._min_rot)
+         * (self._max_rot - self._min_rot)) + self._min_rot)
     matrices_scale = (
         (np.random.rand(pop_size, num_patches, 1, 1)
-            * (self.config['max_scale'] - self.config['min_scale']))
+         * (self.config['max_scale'] - self.config['min_scale']))
         + self.config['min_scale'])
     matrices_squeeze = (
         (np.random.rand(pop_size, num_patches, 1, 1) * (
@@ -60,7 +58,7 @@ class PopulationAffineTransforms(torch.nn.Module):
             + self.config['min_squeeze'])))
     matrices_shear = (
         (np.random.rand(pop_size, num_patches, 1, 1)
-            * (self.config['max_shear'] - self.config['min_shear']))
+         * (self.config['max_shear'] - self.config['min_shear']))
         + self.config['min_shear'])
     self.translation = torch.nn.Parameter(
         torch.tensor(matrices_translation, dtype=torch.float),
@@ -80,7 +78,8 @@ class PopulationAffineTransforms(torch.nn.Module):
     self._identity = (
         torch.ones((pop_size, num_patches, 1, 1)) * torch.eye(2).unsqueeze(0)
         ).to(self.device)
-    self._zero_column = torch.zeros((pop_size, num_patches, 2, 1)).to(self.device)
+    self._zero_column = torch.zeros(
+        (pop_size, num_patches, 2, 1)).to(self.device)
     self._unit_row = (
         torch.ones((pop_size, num_patches, 1, 1)) * torch.tensor([0., 0., 1.])
         ).to(self.device)
@@ -101,19 +100,24 @@ class PopulationAffineTransforms(torch.nn.Module):
   def copy_and_mutate_s(self, parent, child):
     """Copy parameters to child, mutating transform parameters."""
     with torch.no_grad():
-      self.translation[child, ...] = (self.translation[parent, ...]
+      self.translation[child, ...] = (
+          self.translation[parent, ...]
           + self.config['pos_and_rot_mutation_scale'] * torch.randn(
               self.translation[child, ...].shape).to(self.device))
-      self.rotation[child, ...] = (self.rotation[parent, ...]
+      self.rotation[child, ...] = (
+          self.rotation[parent, ...]
           + self.config['pos_and_rot_mutation_scale'] * torch.randn(
               self.rotation[child, ...].shape).to(self.device))
-      self.scale[child, ...] = (self.scale[parent, ...]
+      self.scale[child, ...] = (
+          self.scale[parent, ...]
           + self.config['scale_mutation_scale'] * torch.randn(
               self.scale[child, ...].shape).to(self.device))
-      self.squeeze[child, ...] = (self.squeeze[parent, ...]
+      self.squeeze[child, ...] = (
+          self.squeeze[parent, ...]
           + self.config['distort_mutation_scale'] * torch.randn(
               self.squeeze[child, ...].shape).to(self.device))
-      self.shear[child, ...] = (self.shear[parent, ...]
+      self.shear[child, ...] = (
+          self.shear[parent, ...]
           + self.config['distort_mutation_scale'] * torch.randn(
               self.shear[child, ...].shape).to(self.device))
 
@@ -131,15 +135,13 @@ class PopulationAffineTransforms(torch.nn.Module):
     self._clamp()
     scale_affine_mat = torch.cat([
         torch.cat([self.scale, self.shear], 3),
-        torch.cat([self._zeros, self.scale * self.squeeze], 3)],
-        2)
+        torch.cat([self._zeros, self.scale * self.squeeze], 3)], 2)
     scale_affine_mat = torch.cat([
         torch.cat([scale_affine_mat, self._zero_column], 3),
         self._unit_row], 2)
     rotation_affine_mat = torch.cat([
         torch.cat([torch.cos(self.rotation), -torch.sin(self.rotation)], 3),
-        torch.cat([torch.sin(self.rotation), torch.cos(self.rotation)], 3)],
-        2)
+        torch.cat([torch.sin(self.rotation), torch.cos(self.rotation)], 3)], 2)
     rotation_affine_mat = torch.cat([
         torch.cat([rotation_affine_mat, self._zero_column], 3),
         self._unit_row], 2)
@@ -256,11 +258,11 @@ class PopulationColourHSVTransforms(torch.nn.Module):
 
     coeff_hue = (0.5 * (self._max_hue - self._min_hue) + self._min_hue)
     coeff_sat = (0.5 * (self.config['max_sat'] - self.config['min_sat'])
-        + self.config['min_sat'])
+                 + self.config['min_sat'])
     coeff_val = (0.5 * (self.config['max_val'] - self.config['min_val'])
-        + self.config['min_val'])
+                 + self.config['min_val'])
     population_hues = (np.random.rand(pop_size, num_patches, 1, 1, 1)
-        * coeff_hue)
+                       * coeff_hue)
     population_saturations = np.random.rand(
         pop_size, num_patches, 1, 1, 1) * coeff_sat
     population_values = np.random.rand(
@@ -349,13 +351,16 @@ class PopulationColourRGBTransforms(torch.nn.Module):
     self._pop_size = pop_size
     print(f'PopulationColourRGBTransforms requires_grad={requires_grad}')
 
-    rgb_init_range = (self.config['initial_max_rgb']
-        - self.config['initial_min_rgb'])
-    population_reds = (np.random.rand(pop_size, num_patches, 1, 1, 1)
+    rgb_init_range = (
+        self.config['initial_max_rgb'] - self.config['initial_min_rgb'])
+    population_reds = (
+        np.random.rand(pop_size, num_patches, 1, 1, 1)
         * rgb_init_range) + self.config['initial_min_rgb']
-    population_greens = (np.random.rand(pop_size, num_patches, 1, 1, 1)
+    population_greens = (
+        np.random.rand(pop_size, num_patches, 1, 1, 1)
         * rgb_init_range) + self.config['initial_min_rgb']
-    population_blues = (np.random.rand(pop_size, num_patches, 1, 1, 1)
+    population_blues = (
+        np.random.rand(pop_size, num_patches, 1, 1, 1)
         * rgb_init_range) + self.config['initial_min_rgb']
     population_zeros = np.ones((pop_size, num_patches, 1, 1, 1))
     population_orders = np.random.rand(pop_size, num_patches, 1, 1, 1)

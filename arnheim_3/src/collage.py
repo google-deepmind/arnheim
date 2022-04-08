@@ -1,40 +1,40 @@
-# Copyright 2021 DeepMind Technologies Limited
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-# https://www.apache.org/licenses/LICENSE-2.0
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+"""Collage-making class definitions.
 
-# Arnheim 3 - Collage
-# Piotr Mirowski, Dylan Banarse, Mateusz Malinowski, Yotam Doron, Oriol Vinyals,
-# Simon Osindero, Chrisantha Fernando
-# DeepMind, 2021-2022
+Arnheim 3 - Collage
+Piotr Mirowski, Dylan Banarse, Mateusz Malinowski, Yotam Doron, Oriol Vinyals,
+Simon Osindero, Chrisantha Fernando
+DeepMind, 2021-2022
+Copyright 2021 DeepMind Technologies Limited
 
-# Command-line version of the Google Colab code available at:
-# https://github.com/deepmind/arnheim/blob/main/arnheim_3.ipynb
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+https://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
 
-# Collage-making class definitions
-
-import copy
-import cv2
 import math
-import numpy as np
 import pathlib
+from . import training
+from . import video_utils
+from .collage_generator import PopulationCollage
+import cv2
+import numpy as np
+from .patches import get_segmented_data
 import torch
 import yaml
 
-from .collage_generator import PopulationCollage
-from .patches import get_segmented_data
-from . import training
-from . import video_utils
-
 
 class CollageMaker():
+  """Makes a single collage image.
+
+  A collage image (aka tile) may involve 3x3 parallel evaluations.
+  """
+
   def __init__(
       self,
       prompts,
@@ -45,6 +45,7 @@ class CollageMaker():
       device,
       config):
     """Create a single square collage image.
+
     Args:
       prompts: list of prompts. Optional compositional prompts plus a global one
       segmented_data: patches for the collage
@@ -52,13 +53,15 @@ class CollageMaker():
       clip_model: CLIP model
       file_basename: string, name to use for the saved files
       device: CUDA device
-      config: dictionary with the following fields:
+      config: dictionary with the following fields.
+
+    Config fields:
         compositional_image: bool, whether to use 3x3 CLIPs
         output_dir: string, directory to save working and final images
         video_steps: int, how many steps between video frames; 0 is never
         population_video: bool, create a video with members of the population
         use_normalized_clip: bool, colour-correct images for CLIP evaluation
-        use_image_augmentations: bool, produce image augmentations for evaluation
+        use_image_augmentations: bool, use image augmentations in evaluation
         optim_steps: int, training steps for the collage
         pop_size: int, size of population being evolved
         evolution_frequency: bool, how many steps between evolution evaluations
@@ -79,7 +82,7 @@ class CollageMaker():
     self._population_video = config["population_video"]
     self._use_evolution = config["pop_size"] > 1
     self._evolution_frequency = config["evolution_frequency"]
-    self._initial_search_size = config['initial_search_size']
+    self._initial_search_size = config["initial_search_size"]
 
     self._video_steps = config["video_steps"]
     self._video_writer = None
@@ -122,8 +125,9 @@ class CollageMaker():
 
     # Initial search over hyper-parameters.
     if self._initial_search_size > 1:
-      print(f'\nInitial random search over {self._initial_search_size} individuals')
-      for j in range(population_size):
+      print("\nInitial random search over "
+            f"{self._initial_search_size} individuals")
+      for j in range(self._pop_size):
         generator_search = PopulationCollage(
             config=config,
             device=self._device,
@@ -143,9 +147,9 @@ class CollageMaker():
             device=self._device)
         print(f"Search {losses}")
         idx_best = np.argmin(losses)
-        generator.copy_from(generator_search, j, idx_best)
+        self._generator.copy_from(generator_search, j, idx_best)
         del generator_search
-      print(f'Initial random search done\n')
+      print("Initial random search done\n")
 
     self._optimizer = training.make_optimizer(self._generator,
                                               config["learning_rate"])
@@ -164,11 +168,11 @@ class CollageMaker():
   def loop(self):
     """Main optimisation/image generation loop. Can be interrupted."""
     if self._step == 0:
-      print('\nStarting optimization of collage.')
+      print("\nStarting optimization of collage.")
     else:
-      print(f'\nContinuing optimization of collage at step {self._step}.')
+      print(f"\nContinuing optimization of collage at step {self._step}.")
       if self._video_steps:
-        print(f"Aborting video creation (does not work when interrupted).")
+        print("Aborting video creation (does not work when interrupted).")
         self._video_steps = 0
         self._video_writer = None
         self._population_video_writer = None
@@ -196,7 +200,6 @@ class CollageMaker():
             self._generator, self._config, losses)
       self._step += 1
 
-
   def high_res_render(self,
                       segmented_data_high_res,
                       background_image_high_res,
@@ -214,7 +217,7 @@ class CollageMaker():
         background_image=background_image_high_res)
     idx_best = np.argmin(self._losses_history[-1])
     lowest_loss = self._losses_history[-1][idx_best]
-    print(f'Lowest loss: {lowest_loss} @ index {idx_best}: ')
+    print(f"Lowest loss: {lowest_loss} @ index {idx_best}: ")
     generator_cpu.copy_from(self._generator, 0, idx_best)
     generator_cpu = generator_cpu.to("cpu")
     generator_cpu.tensors_to("cpu")
@@ -271,6 +274,7 @@ class CollageMaker():
 
   def _add_video_frames(self, img_batch, losses):
     """Add images from numpy image batch to video writers.
+
     Args:
       img_batch: numpy array, batch of images (S,H,W,C)
       losses: numpy array, losses for each generator (S,N)
@@ -287,23 +291,28 @@ class CollageMaker():
 
 
 class CollageTiler():
+  """Creates a large collage by producing multiple overlapping collages."""
+
   def __init__(self,
                prompts,
                fixed_background_image,
                clip_model,
                device,
                config):
-    """Creates a large collage by producing multiple interlaced collages.
+    """Create CollageTiler.
+
     Args:
       prompts: list of prompts for the collage maker
       fixed_background_image: highest res background image
       clip_model: CLIP model
       device: CUDA device
-      config: dictionary with the following fields:
+      config: dictionary with the following fields below:
+
+    Config fields used:
         width: number of tiles wide
         height: number of tiles high
         background_use: how to use the background, e.g. per tile or whole image
-        compositional_image: bool, use compositional for multi-CLIP collage tiles
+        compositional_image: bool, compositional for multi-CLIP collage tiles
         high_res_multiplier: int, how much bigger is the final high-res image
         output_dir: directory for generated files
         torch_device: string, either cpu or cuda
@@ -343,6 +352,8 @@ class CollageTiler():
     self._fixed_background = self._scale_fixed_background(high_res=True)
 
   def _print_info(self):
+    """Print some debugging information."""
+
     print(f"Tiling {self._tiles_wide}x{self._tiles_high} collages")
     print("Optimisation:")
     print(f"Tile size: {self._tile_width}x{self._tile_height}")
@@ -355,6 +366,8 @@ class CollageTiler():
       print(f"Tile {i} prompts: {tile_prompts}")
 
   def loop(self):
+    """Re-entrable loop to optmise collage."""
+
     res_training = {}
     while self._y < self._tiles_high:
       while self._x < self._tiles_wide:
@@ -367,8 +380,8 @@ class CollageTiler():
                                     show=self._config["gui"])
           prompts_x_y = self._prompts[self._y * self._tiles_wide + self._x]
           segmented_data, self._segmented_data_high_res = (
-              get_segmented_data(self._config, self._x + self._y *
-                self._tiles_wide))
+              get_segmented_data(
+                  self._config, self._x + self._y * self._tiles_wide))
           self._collage_maker = CollageMaker(
               prompts=prompts_x_y,
               segmented_data=segmented_data,
@@ -420,6 +433,8 @@ class CollageTiler():
     np.save(f"{self._output_dir}/{filename}", all_arrays)
 
   def _scale_fixed_background(self, high_res=True):
+    """Get correctly sized background image."""
+
     if self._fixed_background_image is None:
       return None
     multiplier = self._high_res_multiplier if high_res else 1
@@ -434,6 +449,7 @@ class CollageTiler():
 
   def _get_tile_background(self):
     """Get the background for a particular tile.
+
     This involves getting bordering imagery from left, top left, above and top
     right, where appropriate.
     i.e. tile (1,1) shares overlap with (0,1), (0,2) and (1,0)
@@ -441,24 +457,24 @@ class CollageTiler():
     (1,0), (1,1), (1,2), (1,3)
     (2,0), (2,1), (2,2), (2,3)
     Note that (0,0) is not needed as its contribution is already in (0,1)
+
+    Returns:
+      background_image: small background for optimisation
+      background_image_high_res: high resolution background
     """
     if self._fixed_background is None:
       tile_border_bg = np.zeros((self._high_res_tile_height,
-                                self._high_res_tile_width, 3))
+                                 self._high_res_tile_width, 3))
     else:
       if self._background_use == "Local":
         tile_border_bg = self._fixed_background.copy()
       else:  # Crop out section for this tile.
-        #orgin_y = self._y * self._high_res_tile_height - int(
-        #    self._high_res_tile_height * 2 * self._overlap)
         orgin_y = self._y * (self._high_res_tile_height
                              - math.ceil(self._tile_height * self._overlap)
                              * self._high_res_multiplier)
         orgin_x = self._x * (self._high_res_tile_width
                              - math.ceil(self._tile_width * self._overlap)
                              * self._high_res_multiplier)
-        #orgin_x = self._x * self._high_res_tile_width - int(
-        #    self._high_res_tile_width * 2 * self._overlap)
         tile_border_bg = self._fixed_background[
             orgin_y : orgin_y + self._high_res_tile_height,
             orgin_x : orgin_x + self._high_res_tile_width, :]
@@ -483,7 +499,7 @@ class CollageTiler():
     background_image_high_res = self._resize_image_for_torch(
         tile_border_bg,
         self._high_res_tile_height,
-        self._high_res_tile_width).to('cpu')
+        self._high_res_tile_width).to("cpu")
 
     return background_image, background_image_high_res
 
@@ -495,8 +511,8 @@ class CollageTiler():
     return img.permute(2, 0, 1).to(torch.float32)
 
   def _copy_overlap(self, target, location, tile_idx):
-    # print(
-    #     f"Copying overlap from {location} ({tile_idx}) for {self._y},{self._x}")
+    """Copy area from tile adjacent to target tile to target tile."""
+
     big_height = self._high_res_tile_height
     big_width = self._high_res_tile_width
     pixel_overlap = int(big_width * self._overlap)
@@ -511,16 +527,18 @@ class CollageTiler():
       target[:, 0 : pixel_overlap, :] = source[
           :, big_width - pixel_overlap : big_width, :]
     elif location == "above_right":
-      target[0 : pixel_overlap, big_width - pixel_overlap : big_width, :] = source[
-          big_height - pixel_overlap : big_height, 0 : pixel_overlap, :]
+      target[
+          0 : pixel_overlap, big_width - pixel_overlap : big_width, :] = source[
+              big_height - pixel_overlap : big_height, 0 : pixel_overlap, :]
 
   def assemble_tiles(self):
-    # Stitch together the whole image.
+    """Stitch together the whole image from saved tiles."""
+
     big_height = self._high_res_tile_height
     big_width = self._high_res_tile_width
     full_height = int((big_height + 2 * big_height * self._tiles_high) / 3)
     full_width = int((big_width + 2 * big_width * self._tiles_wide) / 3)
-    full_image = np.zeros((full_height, full_width, 3)).astype('float32')
+    full_image = np.zeros((full_height, full_width, 3)).astype("float32")
 
     for y in range(self._tiles_high):
       for x in range(self._tiles_wide):
@@ -530,8 +548,8 @@ class CollageTiler():
         x_offset = int(big_width * x * 2 / 3)
         full_image[y_offset : y_offset + big_height,
                    x_offset : x_offset + big_width, :] = tile[:, :, :]
-    filename = f"final_tiled_image"
+    filename = "final_tiled_image"
     print(f"Saving assembled tiles to {filename}")
-    video_utils.show_and_save(full_image, self._config,
-        img_format="SHWC", stitch=False,
+    video_utils.show_and_save(
+        full_image, self._config, img_format="SHWC", stitch=False,
         filename=filename, show=self._config["gui"])

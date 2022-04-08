@@ -1,34 +1,28 @@
-# Copyright 2021 DeepMind Technologies Limited
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-# https://www.apache.org/licenses/LICENSE-2.0
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+"""Functions for the optimisation (including evolution) and evaluation.
 
-# Arnheim 3 - Collage
-# Piotr Mirowski, Dylan Banarse, Mateusz Malinowski, Yotam Doron, Oriol Vinyals,
-# Simon Osindero, Chrisantha Fernando
-# DeepMind, 2021-2022
+Arnheim 3 - Collage
+Piotr Mirowski, Dylan Banarse, Mateusz Malinowski, Yotam Doron, Oriol Vinyals,
+Simon Osindero, Chrisantha Fernando
+DeepMind, 2021-2022
 
-# Command-line version of the Google Colab code available at:
-# https://github.com/deepmind/arnheim/blob/main/arnheim_3.ipynb
+Copyright 2021 DeepMind Technologies Limited
 
-# Functions for the optimisation (including evolution) and evaluation.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+https://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
 
-
+import clip
 from matplotlib import pyplot as plt
-
 import numpy as np
 import torch
 import torchvision.transforms as transforms
-
-import clip
-
 from .video_utils import show_and_save
 
 
@@ -40,6 +34,7 @@ def augmentation_transforms(canvas_width,
                             use_normalized_clip=False,
                             use_augmentation=False):
   """Image transforms to produce distorted crops to augment the evaluation.
+
   Args:
     canvas_width: width of the drawing canvas
     use_normalized_clip: Normalisation to better suit CLIP's training data
@@ -69,18 +64,21 @@ def augmentation_transforms(canvas_width,
   return augment_trans
 
 
-def moving_average(a, n=3) :
+def moving_average(a, n=3):
   ret = np.cumsum(a, dtype=float)
   ret[n:] = ret[n:] - ret[:-n]
   return ret[n - 1:] / n
 
 
-def plot_and_save_losses(loss_history, title="Losses", filename=None, show=True):
+def plot_and_save_losses(
+    loss_history, title="Losses", filename=None, show=True):
+  """Plot losses and save to file."""
+
   losses = np.array(loss_history)
   if filename:
     np.save(filename + ".npy", losses, allow_pickle=True)
   if show:
-    plt.figure(figsize=(10,10))
+    plt.figure(figsize=(10, 10))
     plt.xlabel("Training steps")
     plt.ylabel("Loss")
     plt.title(title)
@@ -90,22 +88,23 @@ def plot_and_save_losses(loss_history, title="Losses", filename=None, show=True)
 
 def make_optimizer(generator, learning_rate):
   """Make optimizer for generator's parameters.
+
   Args:
     generator: generator model
     learning_rate: learning rate
-    input_learing_rate: learning rate for input
   Returns:
     optimizer
   """
 
-  my_list = ['positions_top']
-  params = list(map(lambda x: x[1],list(filter(lambda kv: kv[0] in my_list,
-                                               generator.named_parameters()))))
-  base_params = list(map(lambda x: x[1],list(filter(lambda kv: kv[0] not in
-                                      my_list, generator.named_parameters()))))
-  lr_scheduler = torch.optim.SGD([{'params': base_params},
-                                  {'params': params, 'lr': learning_rate}],
-                                    lr=learning_rate)
+  my_list = ["positions_top"]
+  params = list(map(lambda x: x[1], list(filter(lambda kv: kv[0] in my_list,
+                                                generator.named_parameters()))))
+  base_params = list(map(
+      lambda x: x[1], list(filter(
+          lambda kv: kv[0] not in my_list, generator.named_parameters()))))
+  lr_scheduler = torch.optim.SGD([{"params": base_params},
+                                  {"params": params, "lr": learning_rate}],
+                                 lr=learning_rate)
   return lr_scheduler
 
 
@@ -125,19 +124,24 @@ def compute_text_features(prompts, clip_model, device):
 
 def create_augmented_batch(images, augment_trans, text_features, config):
   """Create batch of images to be evaluated.
-  Returns:
-    img_batch: For compositional images the batch contains all the regions.
-        Otherwise the batch contains augmented versions of the original images.
-    num_augs: number of images per original image
-    text_features: a text feature for each augmentation
+
+  Args:
+    images: batch of images to be augmented [N, C, H, W]
+    augment_trans: transformations for augmentations
+    text_features: text feature per image
     config: dictionary with config
+  Returns:
+    img_batch: Augmented versions of the original images [N*num_augs, C, H, W]
+    num_augs: number of images per original image
+    expanded_text_features: a text feature for each augmentation
+    loss_weights: weights for the losses corresponding to each augmentation
   """
   images = images.permute(0, 3, 1, 2)  # NHWC -> NCHW
   expanded_text_features = []
   if config["use_image_augmentations"]:
     num_augs = config["num_augs"]
     img_augs = []
-    for n in range(num_augs):
+    for _ in range(num_augs):
       img_n = augment_trans(images)
       img_augs.append(img_n)
       expanded_text_features.append(text_features[0])
@@ -153,20 +157,23 @@ def create_augmented_batch(images, augment_trans, text_features, config):
 
 def create_compositional_batch(images, augment_trans, text_features):
   """Create 10 sub-images per image by augmenting each with 3x3 crops.
+
   Args:
     images: population of N images, format [N, C, H, W]
+    augment_trans: transformations for augmentations
+    text_features: text feature per image
   Returns:
     Tensor of all compositional sub-images + originals; [N*10, C, H, W] format:
         [x0_y0(P0) ... x0_y0(PN), ..., x2_y2(P0) ... x2_y2(PN), P0, ..., PN]
     10: Number of sub-images + whole, per original image.
     expanded_text_features: list of text features, 1 for each composition image
     loss_weights: weights for the losses corresponding to each composition image
-    """
+  """
   if len(text_features) != 10:
     # text_features should already be 10 in size.
     raise ValueError(
         "10 text prompts required for compositional image creation")
-  resize_for_clip = transforms.Compose([transforms.Scale((224,224))])
+  resize_for_clip = transforms.Compose([transforms.Scale((224, 224))])
   img_swap = torch.swapaxes(images, 3, 1)
   ims = []
   i = 0
@@ -195,6 +202,7 @@ def create_compositional_batch(images, augment_trans, text_features):
 def evaluation(t, clip_enc, generator, augment_trans, text_features,
                prompts, config, device):
   """Do a step of evaluation, returning images and losses.
+
   Args:
     t: step count
     clip_enc: model for CLIP encoding
@@ -212,7 +220,7 @@ def evaluation(t, clip_enc, generator, augment_trans, text_features,
   """
 
   # Annealing parameters.
-  params = {'gamma': t / config["optim_steps"]}
+  params = {"gamma": t / config["optim_steps"]}
 
   # Rebuild the generator.
   img = generator(params)
@@ -245,7 +253,7 @@ def evaluation(t, clip_enc, generator, augment_trans, text_features,
         else:
           print(f"Loss {loss} for image augmentation with prompt {prompts[0]}:")
         show_and_save(img_batch[count].unsqueeze(0), config,
-            img_format="SCHW", show=config["gui"])
+                      img_format="SCHW", show=config["gui"])
       count += 1
   loss = torch.sum(losses) / pop_size
   losses_separate_np = losses.detach().cpu().numpy()
@@ -257,6 +265,7 @@ def evaluation(t, clip_enc, generator, augment_trans, text_features,
 def step_optimization(t, clip_enc, lr_scheduler, generator, augment_trans,
                       text_features, prompts, config, device, final_step=False):
   """Do a step of optimization.
+
   Args:
     t: step count
     clip_enc: model for CLIP encoding
@@ -280,7 +289,6 @@ def step_optimization(t, clip_enc, lr_scheduler, generator, augment_trans,
   if t == int(config["optim_steps"] * (2/3)):
     for g in lr_scheduler.param_groups:
       g["lr"] = g["lr"] / 2.0
-  params = {'gamma': t / config["optim_steps"]}
 
   # Forward pass.
   lr_scheduler.zero_grad()
@@ -309,10 +317,10 @@ def step_optimization(t, clip_enc, lr_scheduler, generator, augment_trans,
     output_dir = config["output_dir"]
     filename = f"{output_dir}/optim_{t}"
     show_and_save(img_np, config,
-                              max_display=config["max_multiple_visualizations"],
-                              stitch=True, img_format="SHWC",
-                              show=config["gui"],
-                              filename=filename)
+                  max_display=config["max_multiple_visualizations"],
+                  stitch=True, img_format="SHWC",
+                  show=config["gui"],
+                  filename=filename)
 
     print("Iteration {:3d}, rendering loss {:.6f}".format(t, loss.item()))
   return losses_np, losses_separate_np, img_np

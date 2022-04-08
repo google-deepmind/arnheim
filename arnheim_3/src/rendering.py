@@ -1,24 +1,22 @@
-# Copyright 2021 DeepMind Technologies Limited
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-# https://www.apache.org/licenses/LICENSE-2.0
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+"""RGB image rendering from patch data.
 
-# Arnheim 3 - Collage
-# Piotr Mirowski, Dylan Banarse, Mateusz Malinowski, Yotam Doron, Oriol Vinyals,
-# Simon Osindero, Chrisantha Fernando
-# DeepMind, 2021-2022
+Arnheim 3 - Collage
+Piotr Mirowski, Dylan Banarse, Mateusz Malinowski, Yotam Doron, Oriol Vinyals,
+Simon Osindero, Chrisantha Fernando
+DeepMind, 2021-2022
 
-# Command-line version of the Google Colab code available at:
-# https://github.com/deepmind/arnheim/blob/main/arnheim_3.ipynb
+Copyright 2021 DeepMind Technologies Limited
 
-# Rendering functions.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+https://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
 
 import torch
 import torch.nn.functional as F
@@ -31,10 +29,12 @@ RENDER_OVERLAP_MASK_THRESHOLD = 0.5
 
 
 def population_render_transparency(x, invert_colours=False, b=None):
-  """Image rendering function that renders all patches on top of one another,
-     with transparency, using black as the transparent colour.
+  """Render image from patches with transparancy.
+
+  Renders patches with transparency using black as the transparent colour.
   Args:
     x: tensor of transformed RGB image patches of shape [S, B, 5, H, W].
+    invert_colours: Invert all RGB values.
     b: optional tensor of background RGB image of shape [S, 3, H, W].
   Returns:
     Tensor of rendered RGB images of shape [S, 3, H, W].
@@ -53,8 +53,8 @@ def population_render_transparency(x, invert_colours=False, b=None):
 
 def population_render_masked_transparency(
     x, mode, invert_colours=False, b=None):
-  """Image rendering function that renders all patches on top of one another,
-     with transparency, using the alpha chanel as the mask colour.
+  """Render image from patches using alpha channel for patch transparency.
+
   Args:
     x: tensor of transformed RGB image patches of shape [S, B, 5, H, W].
     mode: ["clipped" | "normed"], methods of handling alpha with background.
@@ -89,12 +89,14 @@ def population_render_masked_transparency(
   return y.clamp(0., 1.).permute(0, 2, 3, 1)
 
 
-def population_render_overlap(x, invert_colours=False, b=None, gamma=None):
-  """Image rendering function that overlays all patches on top of one another,
-     with semi-translucent overlap, using the alpha chanel as the mask colour
+def population_render_overlap(x, invert_colours=False, b=None):
+  """Render image, overlaying patches on top of one another.
+
+  Uses semi-translucent overlap using the alpha chanel as the mask colour
      and the 5th channel as the order for the overlapped images.
   Args:
     x: tensor of transformed RGB image patches of shape [S, B, 5, H, W].
+    invert_colours: invert RGB values
     b: optional tensor of background RGB image of shape [S, 3, H, W].
   Returns:
     Tensor of rendered RGB images of shape [S, 3, H, W].
@@ -117,5 +119,5 @@ def population_render_overlap(x, invert_colours=False, b=None, gamma=None):
   if b is not None:
     b = b.cuda() if x.is_cuda else b.cpu()
     y = torch.where(mask.sum(1) > RENDER_OVERLAP_MASK_THRESHOLD, y[:, :3, :, :],
-                  b.unsqueeze(0)[:, :3, :, :])
+                    b.unsqueeze(0)[:, :3, :, :])
   return y.clamp(0., 1.).permute(0, 2, 3, 1)

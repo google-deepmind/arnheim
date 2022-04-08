@@ -1,37 +1,36 @@
-# Copyright 2021 DeepMind Technologies Limited
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-# https://www.apache.org/licenses/LICENSE-2.0
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+"""Video utility functions, image rendering and display.
 
-# Arnheim 3 - Collage
-# Piotr Mirowski, Dylan Banarse, Mateusz Malinowski, Yotam Doron, Oriol Vinyals,
-# Simon Osindero, Chrisantha Fernando
-# DeepMind, 2021-2022
+Arnheim 3 - Collage
+Piotr Mirowski, Dylan Banarse, Mateusz Malinowski, Yotam Doron, Oriol Vinyals,
+Simon Osindero, Chrisantha Fernando
+DeepMind, 2021-2022
 
-# Command-line version of the Google Colab code available at:
-# https://github.com/deepmind/arnheim/blob/main/arnheim_3.ipynb
+Copyright 2021 DeepMind Technologies Limited
 
-# Video utility functions, image rendering and display.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+https://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
 
-import cv2
 import io
-import numpy as np
 import os
 import pathlib
+import cv2
+import numpy as np
 import requests
 import torch
 
 
 try:
-  from google.colab.patches import cv2_imshow
-except:
+  from google.colab.patches import cv2_imshow  # pylint: disable=g-import-not-at-top
+except:  # pylint: disable=bare-except
+
   def cv2_imshow(img, name="CollageGenerator"):
     if img.dtype == np.float32 and img.max() > 1.:
       img = img.astype(np.uint8)
@@ -50,7 +49,8 @@ def load_image(filename, as_cv2_image=False, show=False):
   return img[..., ::-1] / 255.  # Reverse colour dim to convert BGR to RGB
 
 
-def cached_url_download(url, format="np_array"):
+def cached_url_download(url, file_format="np_array"):
+  """Download file from URL and cache locally."""
   cache_filename = os.path.basename(url)
   cache = pathlib.Path(cache_filename)
   if not cache.is_file():
@@ -61,11 +61,11 @@ def cached_url_download(url, format="np_array"):
       f.write(bytesio_object.getbuffer())
   else:
     print("Using cached version of " + cache_filename)
-  if format == "np_array":
+  if file_format == "np_array":
     return np.load(cache, allow_pickle=True)
-  elif format == "cv2_image":
+  elif file_format == "cv2_image":
     return load_image(cache.name, as_cv2_image=True, show=False)
-  elif format == "image_as_np":
+  elif file_format == "image_as_np":
     return load_image(cache.name, as_cv2_image=False, show=False)
 
 
@@ -81,16 +81,20 @@ def layout_img_batch(img_batch, max_display=None):
 
 
 def show_and_save(img_batch, config, t=None,
-                  max_display=1, interpolation="None", stitch=True,
+                  max_display=1, stitch=True,
                   img_format="SCHW", show=True, filename=None):
-  """Display image.
+  """Save and display images.
+
   Args:
-    img: image to display
+    img_batch: batch of images to display
+    config: dictionary of all config settings
     t: time step
     max_display: max number of images to display from population
-    interpolation: interpolate enlarged images
     stitch: append images side-by-side
     img_format: SHWC or SCHW (the latter used by CLIP)
+    show: whether to display the image
+    filename: save image using filename, if provided
+    )
   Returns:
     stitched image or None
   """
@@ -113,7 +117,7 @@ def show_and_save(img_batch, config, t=None,
       img = np.clip(img, 0.0, 1.0)
       img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB) * 255
       if filename is not None:
-        if img.shape[1] > config['canvas_width']:
+        if img.shape[1] > config["canvas_width"]:
           filename = "highres_" + filename
         output_dir = config["output_dir"]
         filename = f"{output_dir}/{filename}_{str(i)}"
@@ -128,7 +132,6 @@ def show_and_save(img_batch, config, t=None,
   else:
     print(f"image (stitch) min {img_np.min()}, max {img_np.max()}")
     img_np = np.clip(img_np, 0.0, 1.0)
-    num_images = img_np.shape[0]
     if img_format == "SCHW":  # Convert to SHWC
       img_np = img_np.transpose((0, 2, 3, 1))
     laid_out = layout_img_batch(img_np, max_display)
@@ -144,13 +147,15 @@ def show_and_save(img_batch, config, t=None,
 class VideoWriter:
   """Create a video from image frames."""
 
-  def __init__(self, filename="_autoplay.mp4", fps=20.0, **kw):
+  def __init__(self, filename="_autoplay.mp4", fps=20.0, show=False, **kw):
     """Video creator.
+
     Creates and display a video made from frames. The default
     filename causes the video to be displayed on exit.
     Args:
       filename: name of video file
       fps: frames per second for video
+      show: display video on close
       **kw: args to be passed to FFMPEG_VideoWriter
     Returns:
       VideoWriter instance.
@@ -158,10 +163,12 @@ class VideoWriter:
 
     self.writer = None
     self.params = dict(filename=filename, fps=fps, **kw)
+    self._show = show
     print("No video writing implemented")
 
   def add(self, img):
     """Add image to video.
+
     Add new frame to image file, creating VideoWriter if requried.
     Args:
       img: array-like frame, shape [X, Y, 3] or [X, Y]
@@ -193,6 +200,7 @@ class VideoWriter:
 
   def show(self, **kw):
     """Display video.
+
     Args:
       **kw: args to be passed to mvp.ipython_display
     Returns:
@@ -200,5 +208,5 @@ class VideoWriter:
     """
     self.close()
     fn = self.params["filename"]
-    if config["gui"]:
-      display(mvp.ipython_display(fn, **kw))
+    if self._show:
+      display(mvp.ipython_display(fn, **kw))  # pylint: disable=undefined-variable

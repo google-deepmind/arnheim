@@ -1,38 +1,36 @@
-# Copyright 2021 DeepMind Technologies Limited
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-# https://www.apache.org/licenses/LICENSE-2.0
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+"""Collage network definition.
 
-# Arnheim 3 - Collage
-# Piotr Mirowski, Dylan Banarse, Mateusz Malinowski, Yotam Doron, Oriol Vinyals,
-# Simon Osindero, Chrisantha Fernando
-# DeepMind, 2021-2022
+Arnheim 3 - Collage
+Piotr Mirowski, Dylan Banarse, Mateusz Malinowski, Yotam Doron, Oriol Vinyals,
+Simon Osindero, Chrisantha Fernando
+DeepMind, 2021-2022
 
-# Command-line version of the Google Colab code available at:
-# https://github.com/deepmind/arnheim/blob/main/arnheim_3.ipynb
+Copyright 2021 DeepMind Technologies Limited
 
-# Collage network definition.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+https://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
 
 import copy
-import time
-
-import numpy as np
-import torch
-
 from . import rendering
 from . import transformations
+import numpy as np
+import torch
 
 
 class PopulationCollage(torch.nn.Module):
   """Population-based segmentation collage network.
-  Image structure in this class is SCHW."""
+
+  Image structure in this class is SCHW.
+  """
+
   def __init__(self,
                config,
                device,
@@ -46,22 +44,22 @@ class PopulationCollage(torch.nn.Module):
     # Config, device, number of patches and population size.
     self.config = config
     self.device = device
-    self._canvas_height = config['canvas_height']
-    self._canvas_width = config['canvas_width']
-    self._high_res_multiplier = config['high_res_multiplier']
-    self._num_patches = self.config['num_patches']
+    self._canvas_height = config["canvas_height"]
+    self._canvas_width = config["canvas_width"]
+    self._high_res_multiplier = config["high_res_multiplier"]
+    self._num_patches = self.config["num_patches"]
     self._pop_size = pop_size
-    requires_grad = is_high_res == False
+    requires_grad = not is_high_res
 
     # Create the spatial transformer and colour transformer for patches.
     self.spatial_transformer = transformations.PopulationAffineTransforms(
         config, device, num_patches=self._num_patches, pop_size=pop_size,
         requires_grad=requires_grad, is_high_res=is_high_res)
-    if self.config['colour_transformations'] == "HSV space":
+    if self.config["colour_transformations"] == "HSV space":
       self.colour_transformer = transformations.PopulationColourHSVTransforms(
           config, device, num_patches=self._num_patches, pop_size=pop_size,
           requires_grad=requires_grad)
-    elif self.config['colour_transformations'] == "RGB space":
+    elif self.config["colour_transformations"] == "RGB space":
       self.colour_transformer = transformations.PopulationColourRGBTransforms(
           config, device, num_patches=self._num_patches, pop_size=pop_size,
           requires_grad=requires_grad)
@@ -80,11 +78,11 @@ class PopulationCollage(torch.nn.Module):
     # Store the background image (low- and high-res).
     self.background_image = background_image
     if self.background_image is not None:
-      print(f'Background image of size {self.background_image.shape}')
+      print(f"Background image of size {self.background_image.shape}")
 
     # Store the dataset (low- and high-res).
     self._dataset = segmented_data
-    #print(f'There are {len(self._dataset)} image patches in the dataset')
+    # print(f"There are {len(self._dataset)} image patches in the dataset")
 
     # Initial set of indices pointing to self._num_patches first dataset images.
     self.patch_indices = [np.arange(self._num_patches) % len(self._dataset)
@@ -97,9 +95,8 @@ class PopulationCollage(torch.nn.Module):
     """Store the image patches for each population element."""
     if self._high_res:
       for _ in range(20):
-        print('NOT STORING HIGH-RES PATCHES')
+        print("NOT STORING HIGH-RES PATCHES")
       return
-    t0 = time.time()
 
     if population_idx is not None and self.patches is not None:
       list_indices_population = [population_idx]
@@ -115,7 +112,6 @@ class PopulationCollage(torch.nn.Module):
       for j in range(self._num_patches):
         patch_i_j = self._fetch_patch(i, j, self._high_res)
         self.patches[i, j, ...] = patch_i_j
-    t1 = time.time()
 
   def _fetch_patch(self, idx_population, idx_patch, is_high_res):
     """Helper function to fetch a patch and store on the whole canvas."""
@@ -133,14 +129,12 @@ class PopulationCollage(torch.nn.Module):
           5,
           self._canvas_height * self._high_res_multiplier,
           self._canvas_width * self._high_res_multiplier
-          ).to('cpu')
+          ).to("cpu")
     else:
       w0 = int((self._canvas_width - width_j) / 2.0)
       h0 = int((self._canvas_height - height_j) / 2.0)
       mapped_patch = torch.zeros(
           5, self._canvas_height, self._canvas_width).to(self.device)
-    if w0 < 0 or h0 < 0:
-      import pdb; pdb.set_trace()
     mapped_patch[4, :, :] = 1.0
     mapped_patch[:4, w0:(w0 + width_j), h0:(h0 + height_j)] = patch_j
     return mapped_patch
@@ -151,9 +145,9 @@ class PopulationCollage(torch.nn.Module):
       self.patch_indices[child] = copy.deepcopy(self.patch_indices[parent])
 
       # Mutate the child patches with a single swap from the original dataset.
-      if self.config['patch_mutation_probability'] > np.random.uniform():
-        idx_dataset  = np.random.randint(len(self._dataset))
-        idx_patch  = np.random.randint(self._num_patches)
+      if self.config["patch_mutation_probability"] > np.random.uniform():
+        idx_dataset = np.random.randint(len(self._dataset))
+        idx_patch = np.random.randint(self._num_patches)
         self.patch_indices[child][idx_patch] = idx_dataset
 
       # Update all the patches for the child.
@@ -171,44 +165,42 @@ class PopulationCollage(torch.nn.Module):
           other.spatial_transformer, idx_to, idx_from)
       self.colour_transformer.copy_from(
           other.colour_transformer, idx_to, idx_from)
-      if self._high_res is False:
+      if not self._high_res:
         self.store_patches(idx_to)
 
   def forward(self, params=None):
     """Input-less forward function."""
 
-    assert self._high_res == False
+    assert not self._high_res
     if self.patches is None:
       self.store_patches()
     shifted_patches = self.spatial_transformer(self.patches)
     background_image = self.background_image
-    if params is not None and 'no_background' in params:
-      print('Not using background_image')
+    if params is not None and "no_background" in params:
+      print("Not using background_image")
       background_image = None
 
     self.coloured_patches = self.colour_transformer(shifted_patches)
-    if self.config['render_method'] == "transparency":
-      img = rendering.population_render_transparency(self.coloured_patches,
-          invert_colours=self.config['invert_colours'], b=background_image)
-    elif self.config['render_method'] == "masked_transparency_clipped":
+    if self.config["render_method"] == "transparency":
+      img = rendering.population_render_transparency(
+          self.coloured_patches,
+          invert_colours=self.config["invert_colours"], b=background_image)
+    elif self.config["render_method"] == "masked_transparency_clipped":
       img = rendering.population_render_masked_transparency(
           self.coloured_patches, mode="clipped",
-          invert_colours=self.config['invert_colours'], b=background_image)
-    elif self.config['render_method'] == "masked_transparency_normed":
+          invert_colours=self.config["invert_colours"], b=background_image)
+    elif self.config["render_method"] == "masked_transparency_normed":
       img = rendering.population_render_masked_transparency(
           self.coloured_patches, mode="normed",
-          invert_colours=self.config['invert_colours'], b=background_image)
-    elif self.config['render_method'] == "opacity":
-      if params is not None and 'gamma' in params:
-        gamma = params['gamma']
-      else:
-        gamma = None
-      img = rendering.population_render_overlap(self.coloured_patches,
-          invert_colours=self.config['invert_colours'], b=background_image)
+          invert_colours=self.config["invert_colours"], b=background_image)
+    elif self.config["render_method"] == "opacity":
+      img = rendering.population_render_overlap(
+          self.coloured_patches,
+          invert_colours=self.config["invert_colours"], b=background_image)
     else:
       print("Unhandled render method")
-    if params is not None and 'no_background' in params:
-      print('Setting alpha to zero outside of patches')
+    if params is not None and "no_background" in params:
+      print("Setting alpha to zero outside of patches")
       mask = self.coloured_patches[:, :, 3:4, :, :].sum(1) > 0
       mask = mask.permute(0, 2, 3, 1)
       img = torch.concat([img, mask], axis=-1)
@@ -217,41 +209,33 @@ class PopulationCollage(torch.nn.Module):
   def forward_high_res(self, params=None):
     """Input-less forward function."""
 
-    assert self._high_res == True
+    assert self._high_res
 
-    max_render_size = params.get('max_block_size_high_res', 1000)
+    max_render_size = params.get("max_block_size_high_res", 1000)
     w = self._canvas_width * self._high_res_multiplier
     h = self._canvas_height * self._high_res_multiplier
     if (self._high_res_multiplier % 8 == 0 and
         self._canvas_width * 8 < max_render_size and
         self._canvas_height * 8 < max_render_size):
-      step_w = 8
-      step_h = 8
       num_w = int(self._high_res_multiplier / 8)
       num_h = int(self._high_res_multiplier / 8)
       delta_w = self._canvas_width * 8
       delta_h = self._canvas_height * 8
     elif (self._high_res_multiplier % 4 == 0 and
-        self._canvas_width * 4 < max_render_size and
-        self._canvas_height * 4 < max_render_size):
-      step_w = 4
-      step_h = 4
+          self._canvas_width * 4 < max_render_size and
+          self._canvas_height * 4 < max_render_size):
       num_w = int(self._high_res_multiplier / 4)
       num_h = int(self._high_res_multiplier / 4)
       delta_w = self._canvas_width * 4
       delta_h = self._canvas_height * 4
     elif (self._high_res_multiplier % 2 == 0 and
-        self._canvas_width * 2 < max_render_size and
-        self._canvas_height * 2 < max_render_size):
-      step_w = 2
-      step_h = 2
+          self._canvas_width * 2 < max_render_size and
+          self._canvas_height * 2 < max_render_size):
       num_w = int(self._high_res_multiplier / 2)
       num_h = int(self._high_res_multiplier / 2)
       delta_w = self._canvas_width * 2
       delta_h = self._canvas_height * 2
     else:
-      step_w = 1
-      step_h = 1
       num_w = self._high_res_multiplier
       num_h = self._high_res_multiplier
       delta_w = self._canvas_width
@@ -261,8 +245,8 @@ class PopulationCollage(torch.nn.Module):
     img[..., 3] = 1.0
 
     background_image = self.background_image
-    if params is not None and 'no_background' in params:
-      print('Not using background_image')
+    if params is not None and "no_background" in params:
+      print("Not using background_image")
       background_image = None
 
     for u in range(num_w):
@@ -290,33 +274,31 @@ class PopulationCollage(torch.nn.Module):
 
         # Appy colour transform and render.
         coloured_patches_uv = self.colour_transformer(shifted_patches_uv)
-        if self.config['render_method'] == "transparency":
-          img_uv = rendering.population_render_transparency(coloured_patches_uv,
-              invert_colours=self.config['invert_colours'],
+        if self.config["render_method"] == "transparency":
+          img_uv = rendering.population_render_transparency(
+              coloured_patches_uv,
+              invert_colours=self.config["invert_colours"],
               b=background_image_uv)
-        elif self.config['render_method'] == "masked_transparency_clipped":
+        elif self.config["render_method"] == "masked_transparency_clipped":
           img_uv = rendering.population_render_masked_transparency(
               coloured_patches_uv, mode="clipped",
-              invert_colours=self.config['invert_colours'],
+              invert_colours=self.config["invert_colours"],
               b=background_image_uv)
-        elif self.config['render_method'] == "masked_transparency_normed":
+        elif self.config["render_method"] == "masked_transparency_normed":
           img_uv = rendering.population_render_masked_transparency(
               coloured_patches_uv, mode="normed",
-              invert_colours=self.config['invert_colours'],
+              invert_colours=self.config["invert_colours"],
               b=background_image_uv)
-        elif self.config['render_method'] == "opacity":
-          if params is not None and 'gamma' in params:
-            gamma = params['gamma']
-          else:
-            gamma = None
-          img_uv = rendering.population_render_overlap(coloured_patches_uv,
-              invert_colours=self.config['invert_colours'],
+        elif self.config["render_method"] == "opacity":
+          img_uv = rendering.population_render_overlap(
+              coloured_patches_uv,
+              invert_colours=self.config["invert_colours"],
               b=background_image_uv)
         else:
           print("Unhandled render method")
 
-        if params is not None and 'no_background' in params:
-          print('Setting alpha to zero outside of patches')
+        if params is not None and "no_background" in params:
+          print("Setting alpha to zero outside of patches")
           mask_uv = coloured_patches_uv[:, :, 3:4, :, :].sum(1) > 0
           mask_uv = mask_uv.permute(0, 2, 3, 1)
           img_uv = torch.concat([img_uv, mask_uv], axis=-1)
