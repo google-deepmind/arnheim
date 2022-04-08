@@ -31,13 +31,13 @@ Usage instructions are included in the Colabs which open and run on the
 free-to-use Google Colab platform - just click the buttons below! Improved
 performance and longer timeouts are available with Colab Pro.
 
-Arnheim 1 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/deepmind/arnheim/blob/master/arnheim_1.ipynb)
+Arnheim 1 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/deepmind/arnheim/blob/main/arnheim_1.ipynb)
 
-Arnheim 2 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/deepmind/arnheim/blob/master/arnheim_2.ipynb)
+Arnheim 2 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/deepmind/arnheim/blob/main/arnheim_2.ipynb)
 
-Arnheim 3 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/deepmind/arnheim/blob/master/arnheim_3.ipynb)
+Arnheim 3 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/deepmind/arnheim/blob/main/arnheim_3.ipynb)
 
-Arnheim 3 Patch Maker [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/deepmind/arnheim/blob/master/arnheim_3_patch_maker.ipynb)
+Arnheim 3 Patch Maker [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/deepmind/arnheim/blob/main/arnheim_3_patch_maker.ipynb)
 
 ## Citing this work
 
