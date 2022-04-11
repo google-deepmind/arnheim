@@ -28,7 +28,7 @@ import yaml
 import numpy as np
 import torch
 
-import clip
+import src.clip_encoder as mm_encoder
 
 import src.collage as collage
 import src.video_utils as video_utils
@@ -377,8 +377,7 @@ os.environ["FFMPEG_BINARY"] = "ffmpeg"
 
 
 # Initialise and load CLIP model.
-print(f"Downloading CLIP model {config['clip_model']}...")
-clip_model, _ = clip.load(config["clip_model"], device, jit=False)
+mm_encoder = mm_encoder.CLIPEncoder(config, device)
 
 # Make output dir.
 output_dir = config["output_dir"]
@@ -464,7 +463,7 @@ else:
 ct = collage.CollageTiler(
     prompts=all_prompts,
     fixed_background_image=background_image,
-    clip_model=clip_model,
+    mm_encoder=mm_encoder,
     device=device,
     config=config)
 

@@ -18,7 +18,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import clip
+# import clip
 from matplotlib import pyplot as plt
 import numpy as np
 import torch
@@ -108,18 +108,18 @@ def make_optimizer(generator, learning_rate):
   return lr_scheduler
 
 
-def compute_text_features(prompts, clip_model, device):
-  """Compute CLIP features for all prompts."""
-
-  text_inputs = []
-  for prompt in prompts:
-    text_inputs.append(clip.tokenize(prompt).to(device))
-
-  features = []
-  with torch.no_grad():
-    for text_input in text_inputs:
-      features.append(clip_model.encode_text(text_input))
-  return features
+# def compute_text_features(prompts, clip_model, device):
+#   """Compute CLIP features for all prompts."""
+#
+#   text_inputs = []
+#   for prompt in prompts:
+#     text_inputs.append(clip.tokenize(prompt).to(device))
+#
+#   features = []
+#   with torch.no_grad():
+#     for text_input in text_inputs:
+#       features.append(clip_model.encode_text(text_input))
+#   return features
 
 
 def create_augmented_batch(images, augment_trans, text_features, config):
@@ -199,13 +199,13 @@ def create_compositional_batch(images, augment_trans, text_features):
   return all_img, 10, text_features, loss_weights
 
 
-def evaluation(t, clip_enc, generator, augment_trans, text_features,
+def evaluation(t, mm_encoder, generator, augment_trans, text_features,
                prompts, config, device):
   """Do a step of evaluation, returning images and losses.
 
   Args:
     t: step count
-    clip_enc: model for CLIP encoding
+    mm_encoder: model for image encoding, e.g. CLIP
     generator: drawing generator to optimise
     augment_trans: transforms for image augmentation
     text_features: tuple with the prompt two negative prompts
@@ -238,7 +238,7 @@ def evaluation(t, clip_enc, generator, augment_trans, text_features,
 
   # Compute and add losses after augmenting the image with transforms.
   img_batch = torch.clip(img_batch, 0, 1)  # clip the images.
-  image_features = clip_enc.encode_image(img_batch)
+  image_features = mm_encoder.encode_images(img_batch)
   count = 0
   for n in range(num_augs):  # number of augmentations or composition images
     for p in range(pop_size):
@@ -262,13 +262,13 @@ def evaluation(t, clip_enc, generator, augment_trans, text_features,
   return loss, losses_separate_np, losses_individuals_np, img_np
 
 
-def step_optimization(t, clip_enc, lr_scheduler, generator, augment_trans,
+def step_optimization(t, mm_encoder, lr_scheduler, generator, augment_trans,
                       text_features, prompts, config, device, final_step=False):
   """Do a step of optimization.
 
   Args:
     t: step count
-    clip_enc: model for CLIP encoding
+    mm_encoder: multimodal netword for encoding image, e.g. CLIP
     lr_scheduler: optimizer
     generator: drawing generator to optimise
     augment_trans: transforms for image augmentation
@@ -293,9 +293,9 @@ def step_optimization(t, clip_enc, lr_scheduler, generator, augment_trans,
   # Forward pass.
   lr_scheduler.zero_grad()
   loss, losses_separate_np, losses_np, img_np = evaluation(
-      t=t, clip_enc=clip_enc, generator=generator, augment_trans=augment_trans,
-      text_features=text_features, prompts=prompts, config=config,
-      device=device)
+      t=t, mm_encoder=mm_encoder, generator=generator,
+      augment_trans=augment_trans, text_features=text_features, prompts=prompts,
+      config=config, device=device)
 
   # Backpropagate the gradients.
   loss.backward()

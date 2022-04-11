@@ -40,7 +40,7 @@ class CollageMaker():
       prompts,
       segmented_data,
       background_image,
-      clip_model,
+      mm_encoder,
       file_basename,
       device,
       config):
@@ -50,7 +50,7 @@ class CollageMaker():
       prompts: list of prompts. Optional compositional prompts plus a global one
       segmented_data: patches for the collage
       background_image: background image for the collage
-      clip_model: CLIP model
+      mm_encoder: Multimodal encoder, e.g. CLIP
       file_basename: string, name to use for the saved files
       device: CUDA device
       config: dictionary with the following fields.
@@ -69,7 +69,7 @@ class CollageMaker():
     """
     self._prompts = prompts
     self._background_image = background_image
-    self._clip_model = clip_model
+    self._mm_encoder = mm_encoder
     self._file_basename = file_basename
     self._device = device
     self._config = config
@@ -107,8 +107,9 @@ class CollageMaker():
       print("CLIP prompt", self._prompts[0])
 
     # Prompt to CLIP features.
-    self._prompt_features = training.compute_text_features(
-        self._prompts, self._clip_model, self._device)
+    # self._prompt_features = training.compute_text_features(
+    #     self._prompts, self._mm_enc, self._device)
+    self._prompt_features = self._mm_encoder.encode_texts(self._prompts)
     self._augmentations = training.augmentation_transforms(
         224,
         use_normalized_clip=self._use_normalized_clip,
@@ -137,7 +138,7 @@ class CollageMaker():
             background_image=background_image)
         _, _, losses, _ = training.evaluation(
             t=0,
-            clip_enc=self._clip_model,
+            mm_encoder=self._mm_encoder,
             generator=generator_search,
             augment_trans=self._augmentations,
             text_features=self._prompt_features,
@@ -180,7 +181,7 @@ class CollageMaker():
       last_step = self._step == (self._optim_steps - 1)
       losses, losses_separated, img_batch = training.step_optimization(
           t=self._step,
-          clip_enc=self._clip_model,
+          mm_encoder=self._mm_encoder,
           lr_scheduler=self._optimizer,
           generator=self._generator,
           augment_trans=self._augmentations,
@@ -295,7 +296,7 @@ class CollageTiler():
   def __init__(self,
                prompts,
                fixed_background_image,
-               clip_model,
+               mm_encoder,
                device,
                config):
     """Create CollageTiler.
@@ -303,7 +304,7 @@ class CollageTiler():
     Args:
       prompts: list of prompts for the collage maker
       fixed_background_image: highest res background image
-      clip_model: CLIP model
+      mm_encoder: Multimodal encoder, e.g. CLIP model
       device: CUDA device
       config: dictionary with the following fields below:
 
@@ -318,7 +319,7 @@ class CollageTiler():
     """
     self._prompts = prompts
     self._fixed_background_image = fixed_background_image
-    self._clip_model = clip_model
+    self._mm_encoder = mm_encoder
     self._device = device
     self._config = config
     self._tiles_wide = config["tiles_wide"]
@@ -385,7 +386,7 @@ class CollageTiler():
               prompts=prompts_x_y,
               segmented_data=segmented_data,
               background_image=tile_bg,
-              clip_model=self._clip_model,
+              mm_encoder=self._mm_encoder,
               file_basename=self._tile_basename.format(self._y, self._x, ""),
               device=self._device,
               config=self._config)
