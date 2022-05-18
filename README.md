@@ -25,6 +25,9 @@ The 'Fruit and veg' patches are based on a subset of the
 [Kaggle Fruits 360](https://www.kaggle.com/moltean/fruits) under the same
 license.
 
+![The Fall of the Damned by Rubens and Eaton.](https://raw.githubusercontent.com/deepmind/arnheim/main/images/fall_of_the_damned.jpg)
+![Collages made of different numbers of tree leaves patches (bulls in the top row), as well as Degas-inspired ballet dancers made from animals, faces made of fruit and still life or landscape made from patches of animals.](https://raw.githubusercontent.com/deepmind/arnheim/main/images/bulls_ballet_faces_nature.jpg)
+
 ## Usage
 
 Usage instructions are included in the Colabs which open and run on the
