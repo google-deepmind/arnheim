@@ -42,7 +42,8 @@ Arnheim 3 Patch Maker [![Open In Colab](https://colab.research.google.com/assets
 ## Citing this work
 
 If you use this code (or any derived code), data or these models in your work,
-please cite the relevant accompanying [paper](https://arxiv.org/abs/2105.00162).
+please cite the relevant accompanying papers on [Generative Art Using Neural Visual Grammars and Dual Encoders](https://arxiv.org/abs/2105.00162)
+or on [CLIP-CLOP: CLIP-Guided Collage and Photomontage](https://arxiv.org/abs/2205.03146).
 
 ```
 @misc{fernando2021genart,
@@ -52,6 +53,14 @@ please cite the relevant accompanying [paper](https://arxiv.org/abs/2105.00162).
       eprint={2105.00162},
       archivePrefix={arXiv},
       primaryClass={cs.CV}
+}
+```
+```
+@inproceedings{mirowski2022clip,
+               title={CLIP-CLOP: CLIP-Guided Collage and Photomontage},
+               author={Piotr Mirowski and Dylan Banarse and Mateusz Malinowski and Simon Osindero and Chrisantha Fernando},
+               booktitle={Proceedings of the Thirteenth International Conference on Computational Creativity},
+               year={2022}
 }
 ```
 
