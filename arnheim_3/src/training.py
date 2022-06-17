@@ -173,7 +173,7 @@ def create_compositional_batch(images, augment_trans, text_features):
     # text_features should already be 10 in size.
     raise ValueError(
         "10 text prompts required for compositional image creation")
-  resize_for_clip = transforms.Compose([transforms.Scale((224, 224))])
+  resize_for_clip = transforms.Compose([transforms.Resize((224, 224))])
   img_swap = torch.swapaxes(images, 3, 1)
   ims = []
   i = 0
