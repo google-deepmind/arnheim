@@ -19,11 +19,11 @@ itself.
 
 A spatial transformer-based Arnheim implementation for generating collage images.
 It employs a combination of evolution and training to create collages from
-opaque to transparent image patches. Example patch datasets are provided under
-[CC BY-SA 4.0 licence](https://creativecommons.org/licenses/by-sa/4.0/).
+opaque to transparent image patches. Example patch datasets, with the exception of 'Fruit and veg',
+are provided under [CC BY 4.0 licence](https://creativecommons.org/licenses/by/4.0/).
 The 'Fruit and veg' patches are based on a subset of the
-[Kaggle Fruits 360](https://www.kaggle.com/moltean/fruits) under the same
-license.
+[Kaggle Fruits 360](https://www.kaggle.com/moltean/fruits) and are provided under 
+[CC BY-SA 4.0 licence](https://creativecommons.org/licenses/by-sa/4.0/).
 
 ![The Fall of the Damned by Rubens and Eaton.](https://raw.githubusercontent.com/deepmind/arnheim/main/images/fall_of_the_damned.jpg)
 ![Collages made of different numbers of tree leaves patches (bulls in the top row), as well as Degas-inspired ballet dancers made from animals, faces made of fruit and still life or landscape made from patches of animals.](https://raw.githubusercontent.com/deepmind/arnheim/main/images/bulls_ballet_faces_nature.jpg)
