@@ -15,7 +15,7 @@ framework allowing optimization of its parameters using gradients. Much more
 efficient than Arnheim 1 above but requires differentiating through the image
 itself.
 
-## Arnheim 3
+## Arnheim 3 (aka CLIP-CLOP: CLIP-Guided Collage and Photomontage)
 
 A spatial transformer-based Arnheim implementation for generating collage images.
 It employs a combination of evolution and training to create collages from
