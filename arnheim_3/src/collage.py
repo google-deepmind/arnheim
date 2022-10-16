@@ -135,17 +135,30 @@ class CollageMaker():
             is_high_res=False,
             segmented_data=segmented_data,
             background_image=background_image)
-        _, _, losses, _ = training.evaluation(
-            t=0,
-            clip_enc=self._clip_model,
-            generator=generator_search,
-            augment_trans=self._augmentations,
-            text_features=self._prompt_features,
-            prompts=self._prompts,
-            config=self._config,
-            device=self._device)
+        self._optimizer = training.make_optimizer(generator_search,
+                                                  config["learning_rate"])
+
+        num_steps_search = config["initial_search_num_steps"]
+        if num_steps_search > 1:
+          # Run several steps of gradient descent?
+          for step_search in range(num_steps_search):
+            losses, _, _ = self._train(
+                step=step_search, last_step=False,
+                generator=generator_search)
+        else:
+          # Or simply let initialise the parameters randomly.
+          _, _, losses, _ = training.evaluation(
+              t=0,
+              clip_enc=self._clip_model,
+              generator=generator_search,
+              augment_trans=self._augmentations,
+              text_features=self._prompt_features,
+              prompts=self._prompts,
+              config=self._config,
+              device=self._device)
         print(f"Search {losses}")
         idx_best = np.argmin(losses)
+        print(f"Choose {idx_best} with loss {losses[idx_best]}")
         self._generator.copy_from(generator_search, j, idx_best)
         del generator_search
       print("Initial random search done\n")
@@ -164,6 +177,20 @@ class CollageMaker():
   def step(self):
     return self._step
 
+  def _train(self, step, last_step, generator):
+    losses, losses_separated, img_batch = training.step_optimization(
+        t=step,
+        clip_enc=self._clip_model,
+        lr_scheduler=self._optimizer,
+        generator=generator,
+        augment_trans=self._augmentations,
+        text_features=self._prompt_features,
+        prompts=self._prompts,
+        config=self._config,
+        device=self._device,
+        final_step=last_step)
+    return losses, losses_separated, img_batch
+
   def loop(self):
     """Main optimisation/image generation loop. Can be interrupted."""
     if self._step == 0:
@@ -178,17 +205,8 @@ class CollageMaker():
 
     while self._step < self._optim_steps:
       last_step = self._step == (self._optim_steps - 1)
-      losses, losses_separated, img_batch = training.step_optimization(
-          t=self._step,
-          clip_enc=self._clip_model,
-          lr_scheduler=self._optimizer,
-          generator=self._generator,
-          augment_trans=self._augmentations,
-          text_features=self._prompt_features,
-          prompts=self._prompts,
-          config=self._config,
-          device=self._device,
-          final_step=last_step)
+      losses, losses_separated, img_batch = self._train(
+          step=self._step, last_step=last_step, generator=self._generator)
       self._add_video_frames(img_batch, losses)
       self._losses_history.append(losses)
       self._losses_separated_history.append(losses_separated)

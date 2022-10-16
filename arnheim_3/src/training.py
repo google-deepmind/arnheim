@@ -21,6 +21,7 @@ limitations under the License.
 import clip
 from matplotlib import pyplot as plt
 import numpy as np
+import time
 import torch
 import torchvision.transforms as transforms
 from .video_utils import show_and_save
@@ -283,6 +284,7 @@ def step_optimization(t, clip_enc, lr_scheduler, generator, augment_trans,
   """
 
   # Anneal learning rate and other parameters.
+  t0 = time.time()
   if t == int(config["optim_steps"] / 3):
     for g in lr_scheduler.param_groups:
       g["lr"] = g["lr"] / 2.0
@@ -322,7 +324,9 @@ def step_optimization(t, clip_enc, lr_scheduler, generator, augment_trans,
                   show=config["gui"],
                   filename=filename)
 
-    print("Iteration {:3d}, rendering loss {:.6f}".format(t, loss.item()))
+    t1 = time.time()
+    print("Iteration {:3d}, rendering loss {:.6f}, {:.3f}s/iter".format(
+        t, loss.item(), t1-t0))
   return losses_np, losses_separate_np, img_np
 
 

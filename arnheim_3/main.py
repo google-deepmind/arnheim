@@ -178,6 +178,9 @@ ap.add_argument("--gradient_clipping", type=float, default=10.0,
                 help="Gradient clipping during optimisation")
 ap.add_argument("--initial_search_size", type=int, default=1,
                 help="Initial random search size (1 means no search)")
+ap.add_argument("--initial_search_num_steps", type=int, default=1,
+                help="Number of gradient steps in initial random search size "
+                "(1 means only random search, more means gradient descent)")
 
 # Evolution settings.
 ap.add_argument("--pop_size", type=int, default=2,
