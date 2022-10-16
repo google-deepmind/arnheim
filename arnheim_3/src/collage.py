@@ -68,23 +68,24 @@ class CollageMaker():
         initial_search_size: int, initial random search size (1 means no search)
     """
     self._prompts = prompts
+    self._segmented_data = segmented_data
     self._background_image = background_image
     self._clip_model = clip_model
     self._file_basename = file_basename
     self._device = device
     self._config = config
-    self._compositional_image = config["compositional_image"]
-    self._output_dir = config["output_dir"]
-    self._use_normalized_clip = config["use_normalized_clip"]
-    self._use_image_augmentations = config["use_image_augmentations"]
-    self._optim_steps = config["optim_steps"]
-    self._pop_size = config["pop_size"]
-    self._population_video = config["population_video"]
-    self._use_evolution = config["pop_size"] > 1
-    self._evolution_frequency = config["evolution_frequency"]
-    self._initial_search_size = config["initial_search_size"]
+    self._compositional_image = self._config["compositional_image"]
+    self._output_dir = self._config["output_dir"]
+    self._use_normalized_clip = self._config["use_normalized_clip"]
+    self._use_image_augmentations = self._config["use_image_augmentations"]
+    self._optim_steps = self._config["optim_steps"]
+    self._pop_size = self._config["pop_size"]
+    self._population_video = self._config["population_video"]
+    self._use_evolution = self._config["pop_size"] > 1
+    self._evolution_frequency = self._config["evolution_frequency"]
+    self._initial_search_size = self._config["initial_search_size"]
 
-    self._video_steps = config["video_steps"]
+    self._video_steps = self._config["video_steps"]
     self._video_writer = None
     self._population_video_writer = None
     if self._video_steps:
@@ -116,29 +117,45 @@ class CollageMaker():
 
     # Create population of collage generators.
     self._generator = PopulationCollage(
-        config=config,
+        config=self._config,
         device=self._device,
         is_high_res=False,
         pop_size=self._pop_size,
-        segmented_data=segmented_data,
-        background_image=background_image)
+        segmented_data=self._segmented_data,
+        background_image=self._background_image)
 
-    # Initial search over hyper-parameters.
+    self._optimizer = training.make_optimizer(self._generator,
+                                              self._config["learning_rate"])
+    self._step = 0
+    self._losses_history = []
+    self._losses_separated_history = []
+
+  @property
+  def generator(self):
+    return self._generator
+
+  @property
+  def step(self):
+    return self._step
+
+  def initialise(self):
+    """Initial search over hyper-parameters."""
+
     if self._initial_search_size > 1:
       print("\nInitial random search over "
             f"{self._initial_search_size} individuals")
       for j in range(self._pop_size):
         generator_search = PopulationCollage(
-            config=config,
+            config=self._config,
             device=self._device,
             pop_size=self._initial_search_size,
             is_high_res=False,
-            segmented_data=segmented_data,
-            background_image=background_image)
+            segmented_data=self._segmented_data,
+            background_image=self._background_image)
         self._optimizer = training.make_optimizer(generator_search,
-                                                  config["learning_rate"])
+                                                  self._config["learning_rate"])
 
-        num_steps_search = config["initial_search_num_steps"]
+        num_steps_search = self._config["initial_search_num_steps"]
         if num_steps_search > 1:
           # Run several steps of gradient descent?
           for step_search in range(num_steps_search):
@@ -163,19 +180,8 @@ class CollageMaker():
         del generator_search
       print("Initial random search done\n")
 
-    self._optimizer = training.make_optimizer(self._generator,
-                                              config["learning_rate"])
-    self._step = 0
-    self._losses_history = []
-    self._losses_separated_history = []
-
-  @property
-  def generator(self):
-    return self._generator
-
-  @property
-  def step(self):
-    return self._step
+      self._optimizer = training.make_optimizer(self._generator,
+                                                self._config["learning_rate"])
 
   def _train(self, step, last_step, generator):
     losses, losses_separated, img_batch = training.step_optimization(
@@ -382,6 +388,30 @@ class CollageTiler():
     for i, tile_prompts in enumerate(self._prompts):
       print(f"Tile {i} prompts: {tile_prompts}")
 
+  def initialise(self, manual_mode=False):
+    """Initialise the collage maker, optionally with initial search or manually."""
+
+    if not self._collage_maker:
+      # Create new collage maker with its unique background.
+      print(f"\nNew collage creator for y{self._y}, x{self._x} with bg")
+      tile_bg, self._tile_high_res_bg = self._get_tile_background()
+      video_utils.show_and_save(tile_bg, self._config,
+                                img_format="SCHW", stitch=False,
+                                show=self._config["gui"])
+      prompts_x_y = self._prompts[self._y * self._tiles_wide + self._x]
+      segmented_data, self._segmented_data_high_res = (
+          get_segmented_data(
+              self._config, self._x + self._y * self._tiles_wide))
+      self._collage_maker = CollageMaker(
+          prompts=prompts_x_y,
+          segmented_data=segmented_data,
+          background_image=tile_bg,
+          clip_model=self._clip_model,
+          file_basename=self._tile_basename.format(self._y, self._x, ""),
+          device=self._device,
+          config=self._config)
+    self._collage_maker.initialise()
+
   def loop(self):
     """Re-entrable loop to optmise collage."""
 
@@ -389,24 +419,7 @@ class CollageTiler():
     while self._y < self._tiles_high:
       while self._x < self._tiles_wide:
         if not self._collage_maker:
-          # Create new collage maker with its unique background.
-          print(f"\nNew collage creator for y{self._y}, x{self._x} with bg")
-          tile_bg, self._tile_high_res_bg = self._get_tile_background()
-          video_utils.show_and_save(tile_bg, self._config,
-                                    img_format="SCHW", stitch=False,
-                                    show=self._config["gui"])
-          prompts_x_y = self._prompts[self._y * self._tiles_wide + self._x]
-          segmented_data, self._segmented_data_high_res = (
-              get_segmented_data(
-                  self._config, self._x + self._y * self._tiles_wide))
-          self._collage_maker = CollageMaker(
-              prompts=prompts_x_y,
-              segmented_data=segmented_data,
-              background_image=tile_bg,
-              clip_model=self._clip_model,
-              file_basename=self._tile_basename.format(self._y, self._x, ""),
-              device=self._device,
-              config=self._config)
+          self.initialise(manual_mode=False)
         self._collage_maker.loop()
         collage_img = self._collage_maker.high_res_render(
             self._segmented_data_high_res,

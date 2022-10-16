@@ -470,6 +470,7 @@ ct = collage.CollageTiler(
     clip_model=clip_model,
     device=device,
     config=config)
+ct.initialise(manual_mode=False)
 
 # Collage optimisation loop.
 output = ct.loop()
