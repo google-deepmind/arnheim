@@ -80,6 +80,26 @@ def layout_img_batch(img_batch, max_display=None):
   return img_r
 
 
+def show_stitched_batch(img_batch, max_display=1, show=True):
+  """Display stitched image batch.
+  Args:
+    img: image batch to display
+    max_display: max number of images to display from population
+    show: whether to display the image
+  Returns:
+    stitched image
+  """
+
+  img_np = img_batch.detach().cpu().numpy()
+  img_np = np.clip(img_np, 0.0, 1.0)
+  num_images = img_np.shape[0]
+  img_np = img_np.transpose((0, 2, 3, 1))
+  laid_out = layout_img_batch(img_np, max_display)
+  if show:
+    cv2_imshow(cv2.cvtColor(laid_out, cv2.COLOR_BGR2RGB) * 255)
+  return laid_out
+
+
 def show_and_save(img_batch, config, t=None,
                   max_display=1, stitch=True,
                   img_format="SCHW", show=True, filename=None):
