@@ -106,21 +106,25 @@ def get_segmented_data(config, index):
     numpy arrays: low and high resolution patch data.
   """
   # Select tile's patch set and/or parameters if multiple provided.
-  if "multiple_patch_set" in config and isinstance(
-      config["multiple_patch_set"], list):
+  if ("multiple_patch_set" in config and isinstance(
+      config["multiple_patch_set"], list) and
+      config["multiple_patch_set"] != ['null']):
     config["patch_set"] = config["multiple_patch_set"][
         index % len(config["multiple_patch_set"])]
-  if "multiple_fixed_scale_patches" in config and isinstance(
-      config["multiple_fixed_scale_patches"], list):
+  if ("multiple_fixed_scale_patches" in config and isinstance(
+      config["multiple_fixed_scale_patches"], list) and
+      config["multiple_fixed_scale_patches"] != ['null']):
     config["fixed_scale_patches"] = config["multiple_fixed_scale_patches"][
         index % len(config["multiple_fixed_scale_patches"])] == "True"
-  if "multiple_patch_max_proportion" in config and isinstance(
-      config["multiple_patch_max_proportion"], list):
+  if ("multiple_patch_max_proportion" in config and isinstance(
+      config["multiple_patch_max_proportion"], list) and
+      config["multiple_patch_max_proportion"] != ['null']):
     config["patch_max_proportion"] = int(config[
         "multiple_patch_max_proportion"][
             index % len(config["multiple_patch_max_proportion"])])
-  if "multiple_fixed_scale_coeff" in config and isinstance(
-      config["multiple_fixed_scale_coeff"], list):
+  if ("multiple_fixed_scale_coeff" in config and isinstance(
+      config["multiple_fixed_scale_coeff"], list) and
+      config["multiple_fixed_scale_coeff"] != ['null']):
     config["fixed_scale_coeff"] = float(config["multiple_fixed_scale_coeff"][
         index % len(config["multiple_fixed_scale_coeff"])])
 
@@ -128,7 +132,8 @@ def get_segmented_data(config, index):
 
   # Permute the order of the segmented images.
   num_patches = len(segmented_data_initial)
-  order = np.random.permutation(num_patches)
+  # order = np.random.permutation(num_patches)
+  order = np.arange(num_patches)
 
   # Compress all images until they are at most 1/PATCH_MAX_PROPORTION of the
   # large canvas size.

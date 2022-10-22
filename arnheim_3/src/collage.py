@@ -139,8 +139,14 @@ class CollageMaker():
     return self._step
 
   def initialise(self):
-    """Initial search over hyper-parameters."""
+    """Initialise the collage from checkpoint or search over hyper-parameters."""
 
+    # If we use a checkpoint.
+    if len(self._config["init_checkpoint"]) > 0:
+      self.load(self._config["init_checkpoint"])
+      return
+
+    # If we do an initial random search.
     if self._initial_search_size > 1:
       print("\nInitial random search over "
             f"{self._initial_search_size} individuals")
@@ -182,6 +188,23 @@ class CollageMaker():
 
       self._optimizer = training.make_optimizer(self._generator,
                                                 self._config["learning_rate"])
+
+  def load(self, path_checkpoint):
+    """Load an existing generator from state_dict stored in `path`."""
+    print(f"\nLoading spatial and colour transforms from {path_checkpoint}...")
+    state_dict = torch.load(path_checkpoint, map_location=self._device.type)
+    this_state_dict = self._generator.state_dict()
+    if state_dict.keys() != this_state_dict.keys():
+      print(f"Current and loaded state_dict do not match")
+    for key in this_state_dict:
+      this_shape = this_state_dict[key].shape
+      shape = state_dict[key].shape
+      if this_shape != shape:
+        print(f"state_dict[{key}] do not match: {this_shape} vs. {shape}")
+        print(f"Abort loading from checkpoint.")
+        return
+    print(f"Checkpoint {path_checkpoint} restored.")
+    self._generator.load_state_dict(state_dict)
 
   def _train(self, step, last_step, generator):
     losses, losses_separated, img_batch = training.step_optimization(
@@ -388,8 +411,8 @@ class CollageTiler():
     for i, tile_prompts in enumerate(self._prompts):
       print(f"Tile {i} prompts: {tile_prompts}")
 
-  def initialise(self, manual_mode=False):
-    """Initialise the collage maker, optionally with initial search or manually."""
+  def initialise(self):
+    """Initialise the collage maker, optionally from a checkpoint or initial search."""
 
     if not self._collage_maker:
       # Create new collage maker with its unique background.
@@ -412,6 +435,10 @@ class CollageTiler():
           config=self._config)
     self._collage_maker.initialise()
 
+  def load(self, path):
+    """Load an existing CollageMaker generator from state_dict stored in `path`."""
+    self._collage_maker.load(path)
+
   def loop(self):
     """Re-entrable loop to optmise collage."""
 
@@ -419,7 +446,7 @@ class CollageTiler():
     while self._y < self._tiles_high:
       while self._x < self._tiles_wide:
         if not self._collage_maker:
-          self.initialise(manual_mode=False)
+          self.initialise()
         self._collage_maker.loop()
         collage_img = self._collage_maker.high_res_render(
             self._segmented_data_high_res,

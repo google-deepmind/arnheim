@@ -43,6 +43,12 @@ ap.add_argument("-c", "--config", required=True, is_config_file=True,
 ap.add_argument("--cuda", dest="cuda", action="store_true")
 ap.add_argument("--no-cuda", dest="cuda", action="store_false")
 ap.set_defaults(cuda=True)
+ap.add_argument("--torch_device", type=str, default="cuda",
+                help="Alternative way of specifying the device: cuda or cpu?")
+
+# Output directory.
+ap.add_argument("--init_checkpoint", type=str, default="",
+                help="Path to checkpoint")
 
 # Output directory.
 ap.add_argument("--output_dir", type=str, default="",
@@ -364,16 +370,10 @@ print("\n\n")
 
 # Configure CUDA.
 print("Torch version:", torch.__version__)
-if config["cuda"]:
-  # cuda_version = [s for s in subprocess.check_output(
-  #     ["nvcc", "--version"]).decode("UTF-8").split(", ")
-  #     if s.startswith("release")][0].split(" ")[-1]
-  # print("CUDA version:", cuda_version)
-  torch_device = "cuda"
-else:
-  torch_device = "cpu"
-config["torch_device"] = torch_device
-device = torch.device(torch_device)
+if not config["cuda"] or config["torch_device"] == "cpu":
+  config["torch_device"] = "cpu"
+  config["cuda"] = False
+device = torch.device(config["torch_device"])
 
 # Configure ffmpeg.
 os.environ["FFMPEG_BINARY"] = "ffmpeg"
@@ -470,7 +470,7 @@ ct = collage.CollageTiler(
     clip_model=clip_model,
     device=device,
     config=config)
-ct.initialise(manual_mode=False)
+ct.initialise()
 
 # Collage optimisation loop.
 output = ct.loop()
