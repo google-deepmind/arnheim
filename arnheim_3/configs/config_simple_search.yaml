@@ -4,13 +4,16 @@
 # transparency _adds_ patch colours (black therefore appearing transparent),
 # and masked transparency blends patches using the alpha channel.
 render_method: "masked_transparency_clipped"
-num_patches: 100
+num_patches: 50
 # Colour transformations can be: "none", "RGB space", "HSV space"
 colour_transformations: "RGB space"
+pop_size: 2
 
 # Number of training steps
 optim_steps: 10000
-learning_rate: 0.1
+learning_rate: 0.07
+initial_search_size: 10
+initial_search_num_steps: 40
 trace_every: 50
 
 ### Load segmented patches
@@ -31,21 +34,3 @@ background_blue: 0
 
 # Enter a global description of the image, e.g. 'a photorealistic chicken'
 global_prompt: "a photorealistic chicken"
-global_tile_prompt: True
-tile_images: True
-tiles_wide: 2
-tiles_high: 3
-compositional_image: True
-
-# Single image (i.e. no tiling) composition prompts
-# Specify 3x3 prompts for each composition region (left to right, starting at the top)
-prompt_x0_y0: "a photorealistic sky with sun"
-prompt_x1_y0: "a photorealistic sky"
-prompt_x2_y0: "a photorealistic sky with moon"
-prompt_x0_y1: "a photorealistic tree"
-prompt_x1_y1: "a photorealistic tree"
-prompt_x2_y1: "a photorealistic tree"
-prompt_x0_y2: "a photorealistic field"
-prompt_x1_y2: "a photorealistic field"
-prompt_x2_y2: "a photorealistic chicken"
-

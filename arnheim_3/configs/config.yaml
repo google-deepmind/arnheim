@@ -52,6 +52,7 @@ clip_model: "ViT-B/32"
 # Number of training steps
 optim_steps: 10000
 learning_rate: 0.1
+trace_every: 50
 # Number of augmentations to use in evaluation
 use_image_augmentations: True
 num_augs: 4
@@ -61,6 +62,9 @@ use_normalized_clip: False
 gradient_clipping: 10.0
 # Initial random search size (1 means no search)
 initial_search_size: 1
+
+### Accelerator settings
+torch_device: "cuda"
 
 ### Evolution settings
 # For evolution set POP_SIZE greater than 1

@@ -69,7 +69,7 @@ ap.set_defaults(gui=False)
 # Video and tracing.
 ap.add_argument("--video_steps", type=int, default=0,
                 help="Number of steps between two video frames")
-ap.add_argument("--trace_every", type=int, default=500,
+ap.add_argument("--trace_every", type=int, default=50,
                 help="Number of steps between two logging traces")
 ap.add_argument('--population_video', dest='population_video',
                 action='store_true', help='Write the video of population?')

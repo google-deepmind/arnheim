@@ -12,6 +12,7 @@ colour_transformations: "RGB space"
 # Number of training steps
 optim_steps: 2000
 learning_rate: 0.3
+trace_every: 50
 
 ### Load segmented patches
 patch_set: "animals.npy"
